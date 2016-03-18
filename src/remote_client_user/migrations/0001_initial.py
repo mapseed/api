@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db import models, migrations
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
@@ -19,8 +19,5 @@ class Migration(migrations.Migration):
                 ('allow_remote_signup', models.BooleanField(default=False)),
                 ('client', models.OneToOneField(related_name='permissions', to='oauth2.Client')),
             ],
-            options={
-            },
-            bases=(models.Model,),
         ),
     ]
