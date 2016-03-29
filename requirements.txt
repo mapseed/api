@@ -2,7 +2,7 @@
 # Web server
 # ==============================
 
-Django==1.8.10
+Django==1.8.11
 gevent==1.0.2
 gunicorn==19.4.5
 newrelic==2.60.0.46
@@ -59,7 +59,8 @@ django-cors-headers==1.1.0
 
 djangorestframework==2.4.8
 djangorestframework-csv==1.3.0
-git+https://github.com/mjumbewu/django-rest-framework-bulk.git@84a5d6c#egg=djangorestframework-bulk==0.1.3
+# git+https://github.com/mjumbewu/django-rest-framework-bulk.git@84a5d6c#egg=djangorestframework-bulk==0.1.3
+djangorestframework-bulk
 six>=1.10.0
 markdown  # For browsable API docs
 python-dateutil==2.5
