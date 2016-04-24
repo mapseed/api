@@ -136,6 +136,8 @@ class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRel
     def __init__(self, *args, **kwargs):
         if self.view_name is not None:
             kwargs['view_name'] = self.view_name
+        if self.queryset is not None:
+            kwargs['queryset'] = self.queryset
         super(ShareaboutsRelatedField, self).__init__(*args, **kwargs)
 
     def to_native(self, obj):
@@ -501,7 +503,7 @@ class SimpleGroupSerializer (BaseGroupSerializer):
         exclude = ('id', 'dataset', 'submitters')
 
 class GroupSerializer (BaseGroupSerializer):
-    dataset = DataSetRelatedField()
+    dataset = DataSetRelatedField(queryset=models.Group.objects.all())
 
     class Meta (BaseGroupSerializer.Meta):
         pass
@@ -839,7 +841,7 @@ class SimplePlaceSerializer (BasePlaceSerializer):
 
 class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
-    dataset = DataSetRelatedField()
+    dataset = DataSetRelatedField(queryset=models.Place.objects.all())
     submitter = UserSerializer(read_only=False)
 
     class Meta (BasePlaceSerializer.Meta):
@@ -881,7 +883,7 @@ class SimpleSubmissionSerializer (BaseSubmissionSerializer):
 
 class SubmissionSerializer (BaseSubmissionSerializer, serializers.HyperlinkedModelSerializer):
     url = SubmissionIdentityField()
-    dataset = DataSetRelatedField()
+    dataset = DataSetRelatedField(queryset=models.Submission.objects.all())
     set = SubmissionSetRelatedField(source='*')
     place = PlaceRelatedField()
     submitter = UserSerializer()
