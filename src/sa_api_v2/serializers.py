@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 # ------------------
 #
 
-class GeometryField(serializers.WritableField):
+class GeometryField(serializers.Field):
     def __init__(self, format='dict', *args, **kwargs):
         self.format = format
 
@@ -38,7 +38,7 @@ class GeometryField(serializers.WritableField):
 
         super(GeometryField, self).__init__(*args, **kwargs)
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         if self.format == 'json':
             return obj.json
         elif self.format == 'wkt':
@@ -48,7 +48,7 @@ class GeometryField(serializers.WritableField):
         else:
             raise ValueError('Cannot output as %s' % self.format)
 
-    def from_native(self, data):
+    def to_internal_value(self, data):
         if not isinstance(data, basestring):
             data = json.dumps(data)
 
