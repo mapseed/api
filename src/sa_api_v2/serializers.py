@@ -166,16 +166,19 @@ class DataSetKeysRelatedField (ShareaboutsRelatedField):
 class UserRelatedField (ShareaboutsRelatedField):
     view_name = 'user-detail'
     url_arg_names = ('owner_username',)
+    queryset = models.User.objects.all()
 
 
 class PlaceRelatedField (ShareaboutsRelatedField):
     view_name = 'place-detail'
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id')
+    queryset = models.Place.objects.all()
 
 
 class SubmissionSetRelatedField (ShareaboutsRelatedField):
     view_name = 'submission-list'
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name')
+    queryset = models.Submission.objects.all()
 
 
 class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedIdentityField):
@@ -202,6 +205,7 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
 
 class PlaceIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id')
+    view_name = 'place-detail'
 
 
 class SubmissionSetIdentityField (ShareaboutsIdentityField):
@@ -221,10 +225,12 @@ class DataSetSubmissionSetIdentityField (ShareaboutsIdentityField):
 
 class SubmissionIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id')
+    view_name = 'submission-detail'
 
 
 class DataSetIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug')
+    view_name = 'dataset-detail'
 
 
 class AttachmentFileField (serializers.FileField):
