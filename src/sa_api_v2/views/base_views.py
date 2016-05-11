@@ -995,7 +995,12 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
 
     model = models.Place
     serializer_class = serializers.PlaceSerializer
-    pagination_serializer_class = serializers.FeatureCollectionSerializer
+    # TODO: 'pagination_serializer_class' is deprecated;
+    # using 'pagination_class' instead.
+    # But we'll need to fix other parts of our views and tests as needed.
+    # (see: http://www.django-rest-framework.org/topics/3.1-announcement/)
+    # pagination_serializer_class = serializers.FeatureCollectionSerializer
+    pagination_class = serializers.FeatureCollectionSerializer
     renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
 
