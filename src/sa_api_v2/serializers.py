@@ -1026,19 +1026,17 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
 # ----------------------
 #
 
-class PaginationMetadataSerializer (serializers.Serializer):
-    length = serializers.Field(source='paginator.count')
-    next = pagination.NextPageField(source='*')
-    previous = pagination.PreviousPageField(source='*')
-    page = serializers.Field(source='number')
-    num_pages = serializers.Field(source='paginator.num_pages')
-
-
-class PaginatedResultsSerializer (pagination.BasePaginationSerializer):
-    metadata = PaginationMetadataSerializer(source='*')
+# TODO: We may need to adjust our pagination serializer, which previously
+# used a 'metadata' key. Since pagination is now built into DRF3.3, we'll
+# need to adjust our views/tests accordingly
+# (see:
+# http://www.django-rest-framework.org/api-guide/pagination/#pagenumberpagination)
+# TODO: Do we even need this class?
+class PaginatedResultsSerializer (pagination.PageNumberPagination):
     many = True
 
 
+# TODO: Do we even need this class?
 class FeatureCollectionSerializer (PaginatedResultsSerializer):
     results_field = 'features'
 
@@ -1046,4 +1044,3 @@ class FeatureCollectionSerializer (PaginatedResultsSerializer):
         data = super(FeatureCollectionSerializer, self).to_native(obj)
         data['type'] = 'FeatureCollection'
         return data
-
