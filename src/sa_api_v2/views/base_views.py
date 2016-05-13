@@ -15,7 +15,8 @@ from rest_framework import (views, permissions, mixins, authentication,
 from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.response import Response
-from rest_framework.renderers import JSONRenderer, JSONPRenderer, BrowsableAPIRenderer
+from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
+from rest_framework_jsonp.renderers import JSONPRenderer
 from rest_framework.request import Request
 from rest_framework.exceptions import APIException
 from rest_framework_bulk import generics as bulk_generics
@@ -995,7 +996,12 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
 
     model = models.Place
     serializer_class = serializers.PlaceSerializer
-    pagination_serializer_class = serializers.FeatureCollectionSerializer
+    # TODO: 'pagination_serializer_class' is deprecated;
+    # using 'pagination_class' instead.
+    # But we'll need to fix other parts of our views and tests as needed.
+    # (see: http://www.django-rest-framework.org/topics/3.1-announcement/)
+    # pagination_serializer_class = serializers.FeatureCollectionSerializer
+    pagination_class = serializers.FeatureCollectionSerializer
     renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
 
