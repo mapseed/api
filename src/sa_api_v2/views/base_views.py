@@ -14,6 +14,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import (views, permissions, mixins, authentication,
                             generics, exceptions, status)
+from oauth2_provider.ext.rest_framework import authentication as oauth2Authentication
 from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.response import Response
@@ -568,7 +569,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     parser_classes = (JSONParser, FormParser, MultiPartParser)
     permission_classes = (IsAdminOwnerOrReadOnly, IsAllowedByDataPermissions)
-    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, oauth2Authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = (apikey.auth.ApiKeyAuthentication, cors.auth.OriginAuthentication)
     content_negotiation_class = ShareaboutsContentNegotiation
 
@@ -1589,7 +1590,7 @@ class DataSetInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpdateD
 
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
-    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, oauth2Authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
     always_allow_options = True
 
@@ -1636,7 +1637,7 @@ class DataSetMetadataView (ProtectedOwnedResourceMixin, generics.RetrieveAPIView
 
     model = models.DataSet
     serializer_class = serializers.SimpleDataSetSerializer
-    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, oauth2Authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
     permission_classes = (IsLoggedInOwner,)
     always_allow_options = True
@@ -1671,7 +1672,7 @@ class DataSetKeyListView (ProtectedOwnedResourceMixin, generics.ListAPIView):
 
     model = apikey.models.ApiKey
     serializer_class = serializers.ApiKeySerializer
-    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, oauth2Authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     permission_classes = (IsLoggedInOwner,)
     client_authentication_classes = ()
     always_allow_options = True
@@ -1690,7 +1691,7 @@ class DataSetListMixin (object):
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
     pagination_serializer_class = serializers.PaginatedResultsSerializer
-    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, oauth2Authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
     always_allow_options = True
 
@@ -2001,7 +2002,7 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
 #
 
 class ClientAuthListView (OwnedResourceMixin, generics.ListCreateAPIView):
-    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, oauth2Authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
     permission_classes = (IsLoggedInOwner,)
 
