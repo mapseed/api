@@ -65,7 +65,7 @@ class JSONPCallbackNegotiation (DefaultContentNegotiation):
     """
 
     def select_renderer(self, request, renderers, format_suffix=None):
-        if 'callback' in request.QUERY_PARAMS:
+        if 'callback' in request.query_params:
             format_suffix = 'jsonp'
         return super(JSONPCallbackNegotiation, self).select_renderer(request, renderers, format_suffix)
 
@@ -1040,7 +1040,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         # If we're updating, limit the queryset to the items that are being
         # updated.
         if self.request.method.upper() == 'PUT':
-            data = self.request.DATA
+            data = self.request.data
             ids = [obj['id'] for obj in data if 'id' in obj]
             queryset = queryset.filter(pk__in=ids)
 
@@ -1250,7 +1250,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
         # If we're updating, limit the queryset to the items that are being
         # updated.
         if self.request.method.upper() == 'PUT':
-            data = self.request.DATA
+            data = self.request.data
             ids = [obj['id'] for obj in data if 'id' in obj]
             queryset = queryset.filter(pk__in=ids)
 
@@ -1629,7 +1629,7 @@ class DataSetListView (DataSetListMixin, ProtectedOwnedResourceMixin, generics.L
         queryset = self.get_queryset()
 
         for field in ('slug', 'display_name'):
-            if field in request.DATA: overrides[field] = request.DATA[field]
+            if field in request.data: overrides[field] = request.data[field]
 
         # - - Make sure slug is unique.
         if 'slug' in overrides:
@@ -1860,14 +1860,14 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
         from django.contrib.auth import authenticate, login
 
         field_errors = {}
-        if 'username' not in request.DATA:
+        if 'username' not in request.data:
             field_errors['username'] = 'You must supply a "username" parameter.'
-        if 'password' not in request.DATA:
+        if 'password' not in request.data:
             field_errors['password'] = 'You must supply a "password" parameter.'
         if field_errors:
             return Response({'errors': field_errors}, status=400)
 
-        username, password = request.DATA['username'], request.DATA['password']
+        username, password = request.data['username'], request.data['password']
         user = authenticate(username=username, password=password)
 
         if user is None:

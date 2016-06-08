@@ -116,7 +116,7 @@ class DataSnapshotRequestListView (DataSnapshotMixin, OwnedResourceMixin, views.
         Get the parameters that should identify all snapshots formed off of
         this query.
         """
-        params = request.GET if request.method.upper() == 'GET' else request.DATA
+        params = request.GET if request.method.upper() == 'GET' else request.data
         return {
             'dataset': self.get_dataset(),
             'submission_set': submission_set_name,
