@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 # ------------------
 #
 
-class GeometryField(serializers.WritableField):
+class GeometryField(serializers.Field):
     def __init__(self, format='dict', *args, **kwargs):
         self.format = format
 
@@ -38,7 +38,7 @@ class GeometryField(serializers.WritableField):
 
         super(GeometryField, self).__init__(*args, **kwargs)
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         if self.format == 'json':
             return obj.json
         elif self.format == 'wkt':
@@ -48,7 +48,7 @@ class GeometryField(serializers.WritableField):
         else:
             raise ValueError('Cannot output as %s' % self.format)
 
-    def from_native(self, data):
+    def to_internal_value(self, data):
         if not isinstance(data, basestring):
             data = json.dumps(data)
 
@@ -136,6 +136,8 @@ class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRel
     def __init__(self, *args, **kwargs):
         if self.view_name is not None:
             kwargs['view_name'] = self.view_name
+        if self.queryset is not None:
+            kwargs['queryset'] = self.queryset
         super(ShareaboutsRelatedField, self).__init__(*args, **kwargs)
 
     def to_native(self, obj):
@@ -164,16 +166,19 @@ class DataSetKeysRelatedField (ShareaboutsRelatedField):
 class UserRelatedField (ShareaboutsRelatedField):
     view_name = 'user-detail'
     url_arg_names = ('owner_username',)
+    queryset = models.User.objects.all()
 
 
 class PlaceRelatedField (ShareaboutsRelatedField):
     view_name = 'place-detail'
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id')
+    queryset = models.Place.objects.all()
 
 
 class SubmissionSetRelatedField (ShareaboutsRelatedField):
     view_name = 'submission-list'
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name')
+    queryset = models.Submission.objects.all()
 
 
 class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedIdentityField):
@@ -200,6 +205,7 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
 
 class PlaceIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id')
+    view_name = 'place-detail'
 
 
 class SubmissionSetIdentityField (ShareaboutsIdentityField):
@@ -219,10 +225,12 @@ class DataSetSubmissionSetIdentityField (ShareaboutsIdentityField):
 
 class SubmissionIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id')
+    view_name = 'submission-detail'
 
 
 class DataSetIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug')
+    view_name = 'dataset-detail'
 
 
 class AttachmentFileField (serializers.FileField):
@@ -486,7 +494,7 @@ class SimpleGroupSerializer (BaseGroupSerializer):
         exclude = ('id', 'dataset', 'submitters')
 
 class GroupSerializer (BaseGroupSerializer):
-    dataset = DataSetRelatedField()
+    dataset = DataSetRelatedField(queryset=models.Group.objects.all())
 
     class Meta (BaseGroupSerializer.Meta):
         pass
@@ -823,7 +831,7 @@ class SimplePlaceSerializer (BasePlaceSerializer):
 
 class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
-    dataset = DataSetRelatedField()
+    dataset = DataSetRelatedField(queryset=models.Place.objects.all())
     submitter = UserSerializer(read_only=False)
 
     class Meta (BasePlaceSerializer.Meta):
@@ -865,7 +873,7 @@ class SimpleSubmissionSerializer (BaseSubmissionSerializer):
 
 class SubmissionSerializer (BaseSubmissionSerializer, serializers.HyperlinkedModelSerializer):
     url = SubmissionIdentityField()
-    dataset = DataSetRelatedField()
+    dataset = DataSetRelatedField(queryset=models.Submission.objects.all())
     set = SubmissionSetRelatedField(source='*')
     place = PlaceRelatedField()
     submitter = UserSerializer()
@@ -1002,19 +1010,17 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
 # ----------------------
 #
 
-class PaginationMetadataSerializer (serializers.Serializer):
-    length = serializers.Field(source='paginator.count')
-    next = pagination.NextPageField(source='*')
-    previous = pagination.PreviousPageField(source='*')
-    page = serializers.Field(source='number')
-    num_pages = serializers.Field(source='paginator.num_pages')
-
-
-class PaginatedResultsSerializer (pagination.BasePaginationSerializer):
-    metadata = PaginationMetadataSerializer(source='*')
+# TODO: We may need to adjust our pagination serializer, which previously
+# used a 'metadata' key. Since pagination is now built into DRF3.3, we'll
+# need to adjust our views/tests accordingly
+# (see:
+# http://www.django-rest-framework.org/api-guide/pagination/#pagenumberpagination)
+# TODO: Do we even need this class?
+class PaginatedResultsSerializer (pagination.PageNumberPagination):
     many = True
 
 
+# TODO: Do we even need this class?
 class FeatureCollectionSerializer (PaginatedResultsSerializer):
     results_field = 'features'
 
@@ -1022,4 +1028,3 @@ class FeatureCollectionSerializer (PaginatedResultsSerializer):
         data = super(FeatureCollectionSerializer, self).to_native(obj)
         data['type'] = 'FeatureCollection'
         return data
-
