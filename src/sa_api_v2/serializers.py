@@ -140,7 +140,7 @@ class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRel
             kwargs['queryset'] = self.queryset
         super(ShareaboutsRelatedField, self).__init__(*args, **kwargs)
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         view_name = self.view_name
         request = self.context.get('request', None)
         format = self.format or self.context.get('format', None)
@@ -188,6 +188,9 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
         view_name = kwargs.pop('view_name', None) or getattr(self, 'view_name', None)
         super(ShareaboutsIdentityField, self).__init__(view_name=view_name, *args, **kwargs)
 
+    # TODO: The `field_to_native()` method was removed in DRF 3.0,
+    # so we'll need to use another method, like `get_attribute`
+    # http://www.django-rest-framework.org/topics/3.0-announcement/#serializers
     def field_to_native(self, obj, field_name):
         if obj.pk is None: return None
 
@@ -234,7 +237,7 @@ class DataSetIdentityField (ShareaboutsIdentityField):
 
 
 class AttachmentFileField (serializers.FileField):
-    def to_native(self, obj):
+    def to_representation(self, obj):
         return obj.storage.url(obj.name)
 
 
@@ -257,7 +260,7 @@ class ActivityGenerator (object):
 class EmptyModelSerializer (object):
     """
     A simple mixin that constructs an in-memory model when None is passed in
-    as the object to to_native.
+    as the object to to_representation.
     """
     def ensure_obj(self, obj):
         if obj is None: obj = self.opts.model()
@@ -331,9 +334,9 @@ class DataBlobProcessor (EmptyModelSerializer):
         data.update(blob_data)
         return data
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         obj = self.ensure_obj(obj)
-        data = super(DataBlobProcessor, self).to_native(obj)
+        data = super(DataBlobProcessor, self).to_representation(obj)
         self.explode_data_blob(data)
         return data
 
@@ -427,7 +430,7 @@ class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
         model = models.Attachment
         exclude = ('id', 'thing',)
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         obj = self.ensure_obj(obj)
         data = {
             'created_datetime': obj.created_datetime,
@@ -546,7 +549,7 @@ class BaseUserSerializer (serializers.ModelSerializer):
         else:
             return None
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         return {
             "name": self.get_name(obj),
             "avatar_url": self.get_avatar_url(obj),
@@ -584,8 +587,8 @@ class FullUserSerializer (BaseUserSerializer):
     class Meta (BaseUserSerializer.Meta):
         pass
 
-    def to_native(self, obj):
-        data = super(FullUserSerializer, self).to_native(obj)
+    def to_representation(self, obj):
+        data = super(FullUserSerializer, self).to_representation(obj)
         if obj:
             group_field = self.base_fields['groups']
             group_field.initialize(parent=self, field_name='groups')
@@ -631,10 +634,10 @@ class DataSetPlaceSetSummarySerializer (serializers.HyperlinkedModelSerializer):
             places = places.filter(visible=True)
         return {obj.pk: places.count()}
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         place_count_map = self.get_place_counts(obj)
         obj.places_length = place_count_map.get(obj.pk, 0)
-        data = super(DataSetPlaceSetSummarySerializer, self).to_native(obj)
+        data = super(DataSetPlaceSetSummarySerializer, self).to_representation(obj)
         return data
 
 
@@ -661,7 +664,7 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
                 submission_sets[set_name].append(submission)
         return {dataset.id: submission_sets}
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         request = self.context['request']
         submission_sets_map = self.get_submission_sets(obj)
         sets = submission_sets_map.get(obj.id, {})
@@ -676,7 +679,7 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
 
             obj.submission_set_name = set_name
             obj.submission_set_length = len(submission_set)
-            summaries[set_name] = super(DataSetSubmissionSetSummarySerializer, self).to_native(obj)
+            summaries[set_name] = super(DataSetSubmissionSetSummarySerializer, self).to_representation(obj)
         return summaries
 
 
@@ -788,7 +791,7 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
     def submitter_to_native(self, obj):
         return SimpleUserSerializer(obj.submitter).data if obj.submitter else None
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         obj = self.ensure_obj(obj)
         fields = self.get_fields()
 
@@ -809,7 +812,7 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
 
         data = self.explode_data_blob(data)
 
-        # data = super(PlaceSerializer, self).to_native(obj)
+        # data = super(PlaceSerializer, self).to_representation(obj)
 
         # TODO: Put this flag value directly in to the serializer context,
         #       instead of relying on the request query parameters.
@@ -887,7 +890,7 @@ class BaseDataSetSerializer (EmptyModelSerializer, serializers.ModelSerializer):
     class Meta:
         model = models.DataSet
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         obj = self.ensure_obj(obj)
         fields = self.get_fields()
 
@@ -965,12 +968,12 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
             load_dataset_archive.apply_async(args=(obj.id, self.load_url,))
 
 
-    def from_native(self, data, files=None):
+    def to_internal_value(self, data, files=None):
         if data and 'load_from_url' in data:
             self.load_url = data.pop('load_from_url')
             if self.load_url and isinstance(self.load_url, list):
                 self.load_url = unicode(self.load_url[0])
-        return super(DataSetSerializer, self).from_native(data, files)
+        return super(DataSetSerializer, self).to_internal_value(data, files)
 
 
 # Action serializer
@@ -1024,7 +1027,7 @@ class PaginatedResultsSerializer (pagination.PageNumberPagination):
 class FeatureCollectionSerializer (PaginatedResultsSerializer):
     results_field = 'features'
 
-    def to_native(self, obj):
-        data = super(FeatureCollectionSerializer, self).to_native(obj)
+    def to_representation(self, obj):
+        data = super(FeatureCollectionSerializer, self).to_representation(obj)
         data['type'] = 'FeatureCollection'
         return data
