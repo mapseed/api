@@ -188,6 +188,9 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
         view_name = kwargs.pop('view_name', None) or getattr(self, 'view_name', None)
         super(ShareaboutsIdentityField, self).__init__(view_name=view_name, *args, **kwargs)
 
+    # TODO: The `field_to_native()` method was removed in DRF 3.0,
+    # so we'll need to use another method, like `get_attribute`
+    # http://www.django-rest-framework.org/topics/3.0-announcement/#serializers
     def field_to_native(self, obj, field_name):
         if obj.pk is None: return None
 
