@@ -166,45 +166,45 @@ from mock import patch
 #         self.assertEqual(serializer.data['avatar_url'], '')
 
 
-# class TestUserSerializer (TestCase):
+class TestUserSerializer (TestCase):
 
-#     def setUp(self):
-#         self.owner = User.objects.create_user(
-#             username='my_owning_user', password='mypassword')
-#         self.normal_user = User.objects.create_user(
-#             username='my_normal_user', password='password')
-#         self.special_user = User.objects.create_user(
-#             username='my_special_user', password='password')
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username='my_owning_user', password='mypassword')
+        self.normal_user = User.objects.create_user(
+            username='my_normal_user', password='password')
+        self.special_user = User.objects.create_user(
+            username='my_special_user', password='password')
 
-#         self.datasets = [
-#             DataSet.objects.create(owner=self.owner, slug='ds1'),
-#             DataSet.objects.create(owner=self.owner, slug='ds2')
-#         ]
-#         self.groups = [
-#             Group.objects.create(dataset=self.datasets[0], name='special users')
-#         ]
+        self.datasets = [
+            DataSet.objects.create(owner=self.owner, slug='ds1'),
+            DataSet.objects.create(owner=self.owner, slug='ds2')
+        ]
+        self.groups = [
+            Group.objects.create(dataset=self.datasets[0], name='special users')
+        ]
 
-#         self.special_user._groups.add(self.groups[0])
+        self.special_user._groups.add(self.groups[0])
 
-#     def tearDown(self):
-#         User.objects.all().delete()
-#         UserSocialAuth.objects.all().delete()
-#         Group.objects.all().delete()
-#         DataSet.objects.all().delete()
+    def tearDown(self):
+        User.objects.all().delete()
+        UserSocialAuth.objects.all().delete()
+        Group.objects.all().delete()
+        DataSet.objects.all().delete()
 
-#     def test_partial_serializer_does_not_return_a_users_groups(self):
-#         serializer = UserSerializer(self.special_user)
-#         self.assertNotIn('groups', serializer.data)
+    def test_partial_serializer_does_not_return_a_users_groups(self):
+        serializer = UserSerializer(self.special_user)
+        self.assertNotIn('groups', serializer.data)
 
-#     def test_full_serializer_returns_an_empty_list_of_groups_for_normal_users(self):
-#         serializer = FullUserSerializer(self.normal_user)
-#         self.assertIn('groups', serializer.data)
-#         self.assertEqual(serializer.data['groups'], [])
+    def test_full_serializer_returns_an_empty_list_of_groups_for_normal_users(self):
+        serializer = FullUserSerializer(self.normal_user)
+        self.assertIn('groups', serializer.data)
+        self.assertEqual(serializer.data['groups'], [])
 
-#     def test_full_serializer_returns_a_users_groups(self):
-#         serializer = FullUserSerializer(self.special_user)
-#         self.assertIn('groups', serializer.data)
-#         self.assertEqual(serializer.data['groups'], [{'dataset': reverse('dataset-detail', kwargs={'dataset_slug': 'ds1', 'owner_username': 'my_owning_user'}), 'name': 'special users'}])
+    def test_full_serializer_returns_a_users_groups(self):
+        serializer = FullUserSerializer(self.special_user)
+        self.assertIn('groups', serializer.data)
+        self.assertEqual(serializer.data['groups'], [{'dataset': reverse('dataset-detail', kwargs={'dataset_slug': 'ds1', 'owner_username': 'my_owning_user'}), 'name': 'special users'}])
 
 
 # class TestPlaceSerializer (TestCase):

@@ -1,6 +1,7 @@
 """
 DjangoRestFramework resources for the Shareabouts REST API.
 """
+from django.utils import six
 import ujson as json
 import re
 from collections import defaultdict
@@ -490,11 +491,13 @@ class BaseGroupSerializer (serializers.ModelSerializer):
         model = models.Group
         exclude = ('submitters', 'id')
 
+
 class SimpleGroupSerializer (BaseGroupSerializer):
     permissions = GroupPermissionSerializer(many=True)
 
     class Meta (BaseGroupSerializer.Meta):
         exclude = ('id', 'dataset', 'submitters')
+
 
 class GroupSerializer (BaseGroupSerializer):
     dataset = DataSetRelatedField(queryset=models.Group.objects.all())
@@ -502,13 +505,20 @@ class GroupSerializer (BaseGroupSerializer):
     class Meta (BaseGroupSerializer.Meta):
         pass
 
+    def to_representation(self, obj):
+        ret = {}
+        ret['dataset'] = six.text_type(self.fields['dataset']
+                                       .to_representation(obj.dataset))
+        ret['name'] = obj.name
+        return ret
+
 
 # User serializers
 class BaseUserSerializer (serializers.ModelSerializer):
-    name = serializers.SerializerMethodField('get_name')
-    avatar_url = serializers.SerializerMethodField('get_avatar_url')
-    provider_type = serializers.SerializerMethodField('get_provider_type')
-    provider_id = serializers.SerializerMethodField('get_provider_id')
+    name = serializers.SerializerMethodField()
+    avatar_url = serializers.SerializerMethodField()
+    provider_type = serializers.SerializerMethodField()
+    provider_id = serializers.SerializerMethodField()
 
     strategies = {
         'twitter': TwitterUserDataStrategy(),
@@ -519,7 +529,9 @@ class BaseUserSerializer (serializers.ModelSerializer):
 
     class Meta:
         model = models.User
-        exclude = ('first_name', 'last_name', 'email', 'password', 'is_staff', 'is_active', 'is_superuser', 'last_login', 'date_joined', 'user_permissions')
+        exclude = ('first_name', 'last_name', 'email', 'password', 'is_staff',
+                   'is_active', 'is_superuser', 'last_login', 'date_joined',
+                   'user_permissions')
 
     def get_strategy(self, obj):
         for social_auth in obj.social_auth.all():
@@ -568,6 +580,7 @@ class SimpleUserSerializer (BaseUserSerializer):
     class Meta (BaseUserSerializer.Meta):
         exclude = BaseUserSerializer.Meta.exclude + ('groups',)
 
+
 class UserSerializer (BaseUserSerializer):
     """
     Generates a partial user representation, for use as submitter data in API
@@ -575,6 +588,7 @@ class UserSerializer (BaseUserSerializer):
     """
     class Meta (BaseUserSerializer.Meta):
         exclude = BaseUserSerializer.Meta.exclude + ('groups',)
+
 
 class FullUserSerializer (BaseUserSerializer):
     """
@@ -590,9 +604,9 @@ class FullUserSerializer (BaseUserSerializer):
     def to_representation(self, obj):
         data = super(FullUserSerializer, self).to_representation(obj)
         if obj:
-            group_field = self.base_fields['groups']
-            group_field.initialize(parent=self, field_name='groups')
-            data['groups'] = group_field.field_to_native(obj, 'groups')
+            group_serializer = self.fields['groups']
+            groups_field = obj.get_groups()
+            data['groups'] = group_serializer.to_representation(groups_field)
         return data
 
 
