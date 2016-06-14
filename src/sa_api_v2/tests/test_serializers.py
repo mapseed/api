@@ -111,59 +111,59 @@ from mock import patch
 #         self.assertNotIn('thing', serializer.data)
 
 
-# class TestSocialUserSerializer (TestCase):
+class TestSocialUserSerializer (TestCase):
 
-#     def setUp(self):
-#         test_dir = path.dirname(__file__)
-#         fixture_dir = path.join(test_dir, 'fixtures')
-#         twitter_user_data_file = path.join(fixture_dir, 'twitter_user.json')
-#         facebook_user_data_file = path.join(fixture_dir, 'facebook_user.json')
+    def setUp(self):
+        test_dir = path.dirname(__file__)
+        fixture_dir = path.join(test_dir, 'fixtures')
+        twitter_user_data_file = path.join(fixture_dir, 'twitter_user.json')
+        facebook_user_data_file = path.join(fixture_dir, 'facebook_user.json')
 
-#         self.twitter_user = User.objects.create_user(
-#             username='my_twitter_user', password='mypassword')
-#         self.twitter_social_auth = UserSocialAuth.objects.create(
-#             user=self.twitter_user, provider='twitter', uid='1234',
-#             extra_data=json.load(open(twitter_user_data_file)))
+        self.twitter_user = User.objects.create_user(
+            username='my_twitter_user', password='mypassword')
+        self.twitter_social_auth = UserSocialAuth.objects.create(
+            user=self.twitter_user, provider='twitter', uid='1234',
+            extra_data=json.load(open(twitter_user_data_file)))
 
-#         self.facebook_user = User.objects.create_user(
-#             username='my_facebook_user', password='mypassword')
-#         self.facebook_social_auth = UserSocialAuth.objects.create(
-#             user=self.facebook_user, provider='facebook', uid='1234',
-#             extra_data=json.load(open(facebook_user_data_file)))
+        self.facebook_user = User.objects.create_user(
+            username='my_facebook_user', password='mypassword')
+        self.facebook_social_auth = UserSocialAuth.objects.create(
+            user=self.facebook_user, provider='facebook', uid='1234',
+            extra_data=json.load(open(facebook_user_data_file)))
 
-#         self.no_social_user = User.objects.create_user(
-#             username='my_antisocial_user', password='password')
+        self.no_social_user = User.objects.create_user(
+            username='my_antisocial_user', password='password')
 
-#     def tearDown(self):
-#         User.objects.all().delete()
-#         UserSocialAuth.objects.all().delete()
+    def tearDown(self):
+        User.objects.all().delete()
+        UserSocialAuth.objects.all().delete()
 
-#     def test_twitter_user_attributes(self):
-#         serializer = UserSerializer(self.twitter_user)
-#         self.assertNotIn('password', serializer.data)
-#         self.assertIn('name', serializer.data)
-#         self.assertIn('avatar_url', serializer.data)
+    def test_twitter_user_attributes(self):
+        serializer = UserSerializer(self.twitter_user)
+        self.assertNotIn('password', serializer.data)
+        self.assertIn('name', serializer.data)
+        self.assertIn('avatar_url', serializer.data)
 
-#         self.assertEqual(serializer.data['name'], 'Mjumbe Poe')
-#         self.assertEqual(serializer.data['avatar_url'], 'http://a0.twimg.com/profile_images/1101892515/dreadlocked_browntwitterbird-248x270_bigger.png')
+        self.assertEqual(serializer.data['name'], 'Mjumbe Poe')
+        self.assertEqual(serializer.data['avatar_url'], 'http://a0.twimg.com/profile_images/1101892515/dreadlocked_browntwitterbird-248x270_bigger.png')
 
-#     def test_facebook_user_attributes(self):
-#         serializer = UserSerializer(self.facebook_user)
-#         self.assertNotIn('password', serializer.data)
-#         self.assertIn('name', serializer.data)
-#         self.assertIn('avatar_url', serializer.data)
+    def test_facebook_user_attributes(self):
+        serializer = UserSerializer(self.facebook_user)
+        self.assertNotIn('password', serializer.data)
+        self.assertIn('name', serializer.data)
+        self.assertIn('avatar_url', serializer.data)
 
-#         self.assertEqual(serializer.data['name'], 'Mjumbe Poe')
-#         self.assertEqual(serializer.data['avatar_url'], 'https://fbcdn-profile-a.akamaihd.net/hprofile-ak-ash4/c17.0.97.97/55_512302020614_7565_s.jpg')
+        self.assertEqual(serializer.data['name'], 'Mjumbe Poe')
+        self.assertEqual(serializer.data['avatar_url'], 'https://fbcdn-profile-a.akamaihd.net/hprofile-ak-ash4/c17.0.97.97/55_512302020614_7565_s.jpg')
 
-#     def test_no_social_user_attributes(self):
-#         serializer = UserSerializer(self.no_social_user)
-#         self.assertNotIn('password', serializer.data)
-#         self.assertIn('name', serializer.data)
-#         self.assertIn('avatar_url', serializer.data)
+    def test_no_social_user_attributes(self):
+        serializer = UserSerializer(self.no_social_user)
+        self.assertNotIn('password', serializer.data)
+        self.assertIn('name', serializer.data)
+        self.assertIn('avatar_url', serializer.data)
 
-#         self.assertEqual(serializer.data['name'], '')
-#         self.assertEqual(serializer.data['avatar_url'], '')
+        self.assertEqual(serializer.data['name'], '')
+        self.assertEqual(serializer.data['avatar_url'], '')
 
 
 class TestUserSerializer (TestCase):
@@ -254,48 +254,48 @@ class TestPlaceSerializer (TestCase):
             serializer.data['submission_sets']['comments']['length'], 2)
 
 
-# class TestSubmissionSerializer (TestCase):
+class TestSubmissionSerializer (TestCase):
 
-#     def setUp(self):
-#         User.objects.all().delete()
-#         DataSet.objects.all().delete()
-#         Place.objects.all().delete()
-#         Submission.objects.all().delete()
-#         cache_buffer.reset()
+    def setUp(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        Submission.objects.all().delete()
+        cache_buffer.reset()
 
-#     def test_can_serlialize_a_null_instance(self):
-#         serializer = SubmissionSerializer(None)
-#         serializer.context = {
-#             'request': RequestFactory().get('')
-#         }
+    def test_can_serlialize_a_null_instance(self):
+        serializer = SubmissionSerializer(None)
+        serializer.context = {
+            'request': RequestFactory().get('')
+        }
 
-#         data = serializer.data
-#         self.assertIsInstance(data, dict)
+        data = serializer.data
+        self.assertIsInstance(data, dict)
 
 
-# class TestDataSetSerializer (TestCase):
+class TestDataSetSerializer (TestCase):
 
-#     def setUp(self):
-#         User.objects.all().delete()
-#         DataSet.objects.all().delete()
-#         Place.objects.all().delete()
-#         Submission.objects.all().delete()
-#         cache_buffer.reset()
+    def setUp(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        Submission.objects.all().delete()
+        cache_buffer.reset()
 
-#         self.owner = User.objects.create(username='myuser')
-#         self.dataset = DataSet.objects.create(slug='data',
-#                                               owner_id=self.owner.id)
-#         self.place = Place.objects.create(dataset=self.dataset, geometry='POINT(2 3)')
-#         Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
-#         Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
+        self.owner = User.objects.create(username='myuser')
+        self.dataset = DataSet.objects.create(slug='data',
+                                              owner_id=self.owner.id)
+        self.place = Place.objects.create(dataset=self.dataset, geometry='POINT(2 3)')
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
 
-#     def test_can_serlialize_a_null_instance(self):
-#         serializer = DataSetSerializer(None)
-#         serializer.context = {
-#             'request': RequestFactory().get(''),
-#             'place_count_map_getter': (lambda: {}),
-#             'submission_sets_map_getter': (lambda: {})
-#         }
+    def test_can_serlialize_a_null_instance(self):
+        serializer = DataSetSerializer(None)
+        serializer.context = {
+            'request': RequestFactory().get(''),
+            'place_count_map_getter': (lambda: {}),
+            'submission_sets_map_getter': (lambda: {})
+        }
 
-#         data = serializer.data
-#         self.assertIsInstance(data, dict)
+        data = serializer.data
+        self.assertIsInstance(data, dict)
