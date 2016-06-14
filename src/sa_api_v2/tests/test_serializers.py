@@ -204,7 +204,12 @@ class TestUserSerializer (TestCase):
     def test_full_serializer_returns_a_users_groups(self):
         serializer = FullUserSerializer(self.special_user)
         self.assertIn('groups', serializer.data)
-        self.assertEqual(serializer.data['groups'], [{'dataset': reverse('dataset-detail', kwargs={'dataset_slug': 'ds1', 'owner_username': 'my_owning_user'}), 'name': 'special users'}])
+        self.assertEqual(
+            serializer.data['groups'],
+            [{'dataset': reverse('dataset-detail',
+                                 kwargs={'dataset_slug': 'ds1',
+                                         'owner_username': 'my_owning_user'}),
+              'name': 'special users'}])
 
 
 class TestPlaceSerializer (TestCase):
@@ -219,9 +224,14 @@ class TestPlaceSerializer (TestCase):
         self.owner = User.objects.create(username='myuser')
         self.dataset = DataSet.objects.create(slug='data',
                                               owner_id=self.owner.id)
-        self.place = Place.objects.create(dataset=self.dataset, geometry='POINT(2 3)')
-        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
-        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
+        self.place = Place.objects.create(dataset=self.dataset,
+                                          geometry='POINT(2 3)')
+        Submission.objects.create(dataset=self.dataset,
+                                  place=self.place,
+                                  set_name='comments')
+        Submission.objects.create(dataset=self.dataset,
+                                  place=self.place,
+                                  set_name='comments')
 
     def test_can_serlialize_a_null_instance(self):
         request = RequestFactory().get('')
@@ -240,7 +250,8 @@ class TestPlaceSerializer (TestCase):
         serializer = PlaceSerializer(self.place)
         serializer.context = {'request': request}
 
-        self.assertEqual(serializer.data['submission_sets']['comments']['length'], 2)
+        self.assertEqual(
+            serializer.data['submission_sets']['comments']['length'], 2)
 
 
 # class TestSubmissionSerializer (TestCase):
