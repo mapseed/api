@@ -740,7 +740,8 @@ class SubmittedThingSerializer (ActivityGenerator, DataBlobProcessor):
 
 
 # Place serializers
-class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer):
+class BasePlaceSerializer (SubmittedThingSerializer,
+                           serializers.ModelSerializer):
     geometry = GeometryField(format='wkt')
     attachments = AttachmentSerializer(read_only=True, many=True)
     submitter = SimpleUserSerializer(read_only=False)
@@ -777,7 +778,8 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
             dataset = getattr(request, 'get_dataset', lambda: None)()
-            if not check_data_permission(user, client, 'retrieve', dataset, set_name):
+            if not check_data_permission(user, client, 'retrieve', dataset,
+                                         set_name):
                 continue
 
             summaries[set_name] = self.summary_to_native(set_name, submissions)
@@ -803,11 +805,12 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
             dataset = getattr(request, 'get_dataset', lambda: None)()
-            if not check_data_permission(user, client, 'retrieve', dataset, set_name):
+            if not check_data_permission(user, client, 'retrieve', dataset,
+                                         set_name):
                 continue
 
-            # We know that the submission datasets will be the same as the place
-            # dataset, so say so and avoid an extra query for each.
+            # We know that the submission datasets will be the same as the
+            # place dataset, so say so and avoid an extra query for each.
             for submission in submissions:
                 submission.dataset = place.dataset
 
@@ -858,11 +861,14 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
 
         return data
 
+
 class SimplePlaceSerializer (BasePlaceSerializer):
     class Meta (BasePlaceSerializer.Meta):
         read_only_fields = ('dataset',)
 
-class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializer):
+
+class PlaceSerializer (BasePlaceSerializer,
+                       serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
     dataset = DataSetRelatedField(queryset=models.Place.objects.all())
     submitter = UserSerializer(read_only=False)
@@ -872,7 +878,7 @@ class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializ
 
     def summary_to_native(self, set_name, submissions):
         url_field = SubmissionSetIdentityField()
-        url_field.initialize(parent=self, field_name=None)
+        # url_field.initialize(parent=self, field_name=None)
         set_url = url_field.field_to_native(submissions[0], None)
 
         return {

@@ -207,40 +207,40 @@ class TestUserSerializer (TestCase):
         self.assertEqual(serializer.data['groups'], [{'dataset': reverse('dataset-detail', kwargs={'dataset_slug': 'ds1', 'owner_username': 'my_owning_user'}), 'name': 'special users'}])
 
 
-# class TestPlaceSerializer (TestCase):
+class TestPlaceSerializer (TestCase):
 
-#     def setUp(self):
-#         User.objects.all().delete()
-#         DataSet.objects.all().delete()
-#         Place.objects.all().delete()
-#         Submission.objects.all().delete()
-#         cache_buffer.reset()
+    def setUp(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        Submission.objects.all().delete()
+        cache_buffer.reset()
 
-#         self.owner = User.objects.create(username='myuser')
-#         self.dataset = DataSet.objects.create(slug='data',
-#                                               owner_id=self.owner.id)
-#         self.place = Place.objects.create(dataset=self.dataset, geometry='POINT(2 3)')
-#         Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
-#         Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
+        self.owner = User.objects.create(username='myuser')
+        self.dataset = DataSet.objects.create(slug='data',
+                                              owner_id=self.owner.id)
+        self.place = Place.objects.create(dataset=self.dataset, geometry='POINT(2 3)')
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
 
-#     def test_can_serlialize_a_null_instance(self):
-#         request = RequestFactory().get('')
-#         request.get_dataset = lambda: self.dataset
+    def test_can_serlialize_a_null_instance(self):
+        request = RequestFactory().get('')
+        request.get_dataset = lambda: self.dataset
 
-#         serializer = PlaceSerializer(None)
-#         serializer.context = {'request': request}
+        serializer = PlaceSerializer(None)
+        serializer.context = {'request': request}
 
-#         data = serializer.data
-#         self.assertIsInstance(data, dict)
+        data = serializer.data
+        self.assertIsInstance(data, dict)
 
-#     def test_place_has_right_number_of_submissions(self):
-#         request = RequestFactory().get('')
-#         request.get_dataset = lambda: self.dataset
+    def test_place_has_right_number_of_submissions(self):
+        request = RequestFactory().get('')
+        request.get_dataset = lambda: self.dataset
 
-#         serializer = PlaceSerializer(self.place)
-#         serializer.context = {'request': request}
+        serializer = PlaceSerializer(self.place)
+        serializer.context = {'request': request}
 
-#         self.assertEqual(serializer.data['submission_sets']['comments']['length'], 2)
+        self.assertEqual(serializer.data['submission_sets']['comments']['length'], 2)
 
 
 # class TestSubmissionSerializer (TestCase):
