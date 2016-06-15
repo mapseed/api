@@ -14,101 +14,105 @@ from os import path
 from mock import patch
 
 
-# class TestAttachmentSerializer (TestCase):
+class TestAttachmentSerializer (TestCase):
 
-#     def setUp(self):
-#         f = ContentFile('this is a test')
-#         f.name = 'my_file.txt'
-#         self.attachment_model = Attachment(name='my_file', file=f)
+    def setUp(self):
+        f = ContentFile('this is a test')
+        f.name = 'my_file.txt'
+        self.attachment_model = Attachment(name='my_file', file=f)
 
-#     def test_attributes(self):
-#         serializer = AttachmentSerializer(self.attachment_model)
-#         self.assertNotIn('id', serializer.data)
-#         self.assertNotIn('thing', serializer.data)
+    def test_attributes(self):
+        serializer = AttachmentSerializer(self.attachment_model)
+        self.assertNotIn('id', serializer.data)
+        self.assertNotIn('thing', serializer.data)
 
-#         self.assertIn('created_datetime', serializer.data)
-#         self.assertIn('updated_datetime', serializer.data)
-#         self.assertIn('file', serializer.data)
-#         self.assertIn('name', serializer.data)
+        self.assertIn('created_datetime', serializer.data)
+        self.assertIn('updated_datetime', serializer.data)
+        self.assertIn('file', serializer.data)
+        self.assertIn('name', serializer.data)
 
-#     def test_can_serlialize_a_null_instance(self):
-#         serializer = AttachmentSerializer(None)
-#         data = serializer.data
-#         self.assertIsInstance(data, dict)
+    def test_can_serlialize_a_null_instance(self):
+        serializer = AttachmentSerializer(None)
+        data = serializer.data
+        self.assertIsInstance(data, dict)
 
 
-# class TestActionSerializer (TestCase):
+class TestActionSerializer (TestCase):
 
-#     def setUp(self):
-#         User.objects.all().delete()
-#         DataSet.objects.all().delete()
-#         Place.objects.all().delete()
-#         Action.objects.all().delete()
+    def setUp(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        Action.objects.all().delete()
 
-#         owner = User.objects.create(username='myuser')
-#         dataset = DataSet.objects.create(slug='data',
-#                                          owner_id=owner.id)
-#         place = Place.objects.create(dataset=dataset, geometry='POINT(2 3)')
-#         comment = Submission.objects.create(dataset=dataset, place=place, set_name='comments')
+        owner = User.objects.create(username='myuser')
+        dataset = DataSet.objects.create(slug='data',
+                                         owner_id=owner.id)
+        place = Place.objects.create(dataset=dataset, geometry='POINT(2 3)')
+        comment = Submission.objects.create(dataset=dataset,
+                                            place=place,
+                                            set_name='comments')
 
-#         self.place_action = Action.objects.create(thing=place.submittedthing_ptr)
-#         self.comment_action = Action.objects.create(thing=comment.submittedthing_ptr)
+        self.place_action = Action.objects.create(
+            thing=place.submittedthing_ptr)
+        self.comment_action = Action.objects.create(
+            thing=comment.submittedthing_ptr)
 
-#     def test_place_action_attributes(self):
-#         serializer = ActionSerializer(self.place_action)
-#         serializer.context = {
-#             'request': RequestFactory().get('')
-#         }
+    def test_place_action_attributes(self):
+        serializer = ActionSerializer(self.place_action)
+        serializer.context = {
+            'request': RequestFactory().get('')
+        }
 
-#         self.assertIn('id', serializer.data)
-#         self.assertEqual(serializer.data.get('action'), 'create')
-#         self.assertEqual(serializer.data.get('target_type'), 'place')
-#         self.assertIn('target', serializer.data)
-#         self.assertNotIn('thing', serializer.data)
+        self.assertIn('id', serializer.data)
+        self.assertEqual(serializer.data.get('action'), 'create')
+        self.assertEqual(serializer.data.get('target_type'), 'place')
+        self.assertIn('target', serializer.data)
+        self.assertNotIn('thing', serializer.data)
 
-#     def test_submission_action_attributes(self):
-#         serializer = ActionSerializer(self.comment_action)
-#         serializer.context = {
-#             'request': RequestFactory().get('')
-#         }
+    def test_submission_action_attributes(self):
+        serializer = ActionSerializer(self.comment_action)
+        serializer.context = {
+            'request': RequestFactory().get('')
+        }
 
-#         self.assertIn('id', serializer.data)
-#         self.assertEqual(serializer.data.get('action'), 'create')
-#         self.assertEqual(serializer.data.get('target_type'), 'comments')
-#         self.assertIn('target', serializer.data)
-#         self.assertNotIn('thing', serializer.data)
+        self.assertIn('id', serializer.data)
+        self.assertEqual(serializer.data.get('action'), 'create')
+        self.assertEqual(serializer.data.get('target_type'), 'comments')
+        self.assertIn('target', serializer.data)
+        self.assertNotIn('thing', serializer.data)
 
-#     def test_prejoined_place_action_attributes(self):
-#         action = Action.objects.all()\
-#             .select_related('thing__place' ,'thing__submission')\
-#             .filter(thing=self.place_action.thing)[0]
+    def test_prejoined_place_action_attributes(self):
+        action = Action.objects.all()\
+            .select_related('thing__place' ,'thing__submission')\
+            .filter(thing=self.place_action.thing)[0]
 
-#         serializer = ActionSerializer(action)
-#         serializer.context = {
-#             'request': RequestFactory().get('')
-#         }
+        serializer = ActionSerializer(action)
+        serializer.context = {
+            'request': RequestFactory().get('')
+        }
 
-#         self.assertIn('id', serializer.data)
-#         self.assertEqual(serializer.data.get('action'), 'create')
-#         self.assertEqual(serializer.data.get('target_type'), 'place')
-#         self.assertIn('target', serializer.data)
-#         self.assertNotIn('thing', serializer.data)
+        self.assertIn('id', serializer.data)
+        self.assertEqual(serializer.data.get('action'), 'create')
+        self.assertEqual(serializer.data.get('target_type'), 'place')
+        self.assertIn('target', serializer.data)
+        self.assertNotIn('thing', serializer.data)
 
-#     def test_prejoined_submission_action_attributes(self):
-#         action = Action.objects.all()\
-#             .select_related('thing__place' ,'thing__submission')\
-#             .filter(thing=self.comment_action.thing)[0]
+    def test_prejoined_submission_action_attributes(self):
+        action = Action.objects.all()\
+            .select_related('thing__place' ,'thing__submission')\
+            .filter(thing=self.comment_action.thing)[0]
 
-#         serializer = ActionSerializer(action)
-#         serializer.context = {
-#             'request': RequestFactory().get('')
-#         }
+        serializer = ActionSerializer(action)
+        serializer.context = {
+            'request': RequestFactory().get('')
+        }
 
-#         self.assertIn('id', serializer.data)
-#         self.assertEqual(serializer.data.get('action'), 'create')
-#         self.assertEqual(serializer.data.get('target_type'), 'comments')
-#         self.assertIn('target', serializer.data)
-#         self.assertNotIn('thing', serializer.data)
+        self.assertIn('id', serializer.data)
+        self.assertEqual(serializer.data.get('action'), 'create')
+        self.assertEqual(serializer.data.get('target_type'), 'comments')
+        self.assertIn('target', serializer.data)
+        self.assertNotIn('thing', serializer.data)
 
 
 class TestSocialUserSerializer (TestCase):
