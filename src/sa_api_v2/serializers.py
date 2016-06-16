@@ -1048,7 +1048,10 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
         except models.Place.DoesNotExist:
             serializer = SubmissionSerializer(obj.thing.submission)
 
+        # NOTE: If we need 'context' accessible within the serializer's fields,
+        # we can pass it in as a kwarg in the serializer constructor above.
         serializer.context = self.context
+
         return serializer.data
 
 
