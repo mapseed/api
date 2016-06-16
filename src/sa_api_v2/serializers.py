@@ -1007,8 +1007,8 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
 
 # Action serializer
 class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
-    target_type = serializers.SerializerMethodField('get_target_type')
-    target = serializers.SerializerMethodField('get_target')
+    target_type = serializers.SerializerMethodField()
+    target = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Action
