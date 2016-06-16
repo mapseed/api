@@ -141,6 +141,12 @@ class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRel
             kwargs['queryset'] = self.queryset
         super(ShareaboutsRelatedField, self).__init__(*args, **kwargs)
 
+    def get_attribute(self, obj):
+        # Pass the entire object through to `to_representation()`,
+        # instead of the standard attribute lookup. Otherwise,
+        # obj is just a DRF relations.PKOnlyObject.
+        return obj
+
     def to_representation(self, obj):
         view_name = self.view_name
         request = self.context.get('request', None)
@@ -189,11 +195,15 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
         view_name = kwargs.pop('view_name', None) or getattr(self, 'view_name', None)
         super(ShareaboutsIdentityField, self).__init__(view_name=view_name, *args, **kwargs)
 
-    # TODO: The `field_to_native()` method was removed in DRF 3.0,
-    # so we'll need to use another method, like `get_attribute`
-    # http://www.django-rest-framework.org/topics/3.0-announcement/#serializers
-    def field_to_native(self, obj, field_name):
-        if obj.pk is None: return None
+    def get_attribute(self, obj):
+        # Pass the entire object through to `to_representation()`,
+        # instead of the standard attribute lookup. Otherwise,
+        # obj is just a DRF relations.PKOnlyObject.
+        return obj
+
+    def to_representation(self, obj):
+        if obj.pk is None:
+            return None
 
         request = self.context.get('request', None)
         format = self.context.get('format', None)
@@ -841,7 +851,7 @@ class BasePlaceSerializer (SubmittedThingSerializer,
         }
 
         if 'url' in fields:
-            data['url'] = fields['url'].field_to_native(obj, 'pk')
+            data['url'] = fields['url'].to_representation(obj)
 
         data = self.explode_data_blob(data)
 
@@ -878,8 +888,7 @@ class PlaceSerializer (BasePlaceSerializer,
 
     def summary_to_native(self, set_name, submissions):
         url_field = SubmissionSetIdentityField()
-        # url_field.initialize(parent=self, field_name=None)
-        set_url = url_field.field_to_native(submissions[0], None)
+        set_url = url_field.to_representation(submissions[0])
 
         return {
             'name': set_name,
@@ -934,24 +943,24 @@ class BaseDataSetSerializer (EmptyModelSerializer, serializers.ModelSerializer):
             'id': obj.pk,
             'slug': obj.slug,
             'display_name': obj.display_name,
-            'owner': fields['owner'].field_to_native(obj, 'owner') if obj.owner_id else None,
+            'owner': fields['owner'].to_representation(obj) if obj.owner_id else None,
         }
 
         if 'places' in fields:
             fields['places'].context = self.context
-            data['places'] = fields['places'].field_to_native(obj, 'places')
+            data['places'] = fields['places'].to_representation(obj)
 
         if 'submission_sets' in fields:
             fields['submission_sets'].context = self.context
-            data['submission_sets'] = fields['submission_sets'].field_to_native(obj, 'submission_sets')
+            data['submission_sets'] = fields['submission_sets'].to_representation(obj)
 
         if 'url' in fields:
-            data['url'] = fields['url'].field_to_native(obj, 'url')
+            data['url'] = fields['url'].to_representation(obj)
 
-        if 'keys' in fields: data['keys'] = fields['keys'].field_to_native(obj, 'keys')
-        if 'origins' in fields: data['origins'] = fields['origins'].field_to_native(obj, 'origins')
-        if 'groups' in fields: data['groups'] = fields['groups'].field_to_native(obj, 'groups')
-        if 'permissions' in fields: data['permissions'] = fields['permissions'].field_to_native(obj, 'permissions')
+        if 'keys' in fields: data['keys'] = fields['keys'].to_representation(obj)
+        if 'origins' in fields: data['origins'] = fields['origins'].to_representation(obj)
+        if 'groups' in fields: data['groups'] = fields['groups'].to_representation(obj)
+        if 'permissions' in fields: data['permissions'] = fields['permissions'].to_representation(obj)
 
         # Construct a SortedDictWithMetaData to get the brosable API form
         ret = self._dict_class(data)
