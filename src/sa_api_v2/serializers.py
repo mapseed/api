@@ -64,6 +64,7 @@ class GeometryField(serializers.Field):
 # ---------------------------
 #
 
+
 class ShareaboutsFieldMixin (object):
 
     # These names should match the names of the cache parameters, and should be
@@ -77,7 +78,8 @@ class ShareaboutsFieldMixin (object):
         if isinstance(obj, models.User):
             instance_kwargs = {'owner_username': obj.username}
         else:
-            instance_kwargs = obj.cache.get_cached_instance_params(obj.pk, lambda: obj)
+            instance_kwargs = obj.cache.get_cached_instance_params(obj.pk,
+                                                                   lambda: obj)
 
         url_kwargs = {}
         for arg_name in self.url_arg_names:
@@ -86,7 +88,8 @@ class ShareaboutsFieldMixin (object):
                 try:
                     arg_value = getattr(obj, arg_name)
                 except AttributeError:
-                    raise KeyError('No arg named %r in %r' % (arg_name, instance_kwargs))
+                    raise KeyError('No arg named %r in %r' % (arg_name,
+                                                              instance_kwargs))
             url_kwargs[arg_name] = arg_value
         return url_kwargs
 
@@ -106,12 +109,14 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
         'submission-detail': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}/{submission_set_name}/{submission_id}',
         'submission-list': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}/{submission_set_name}',
 
-        'place-detail': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}',
+        'place-detail':
+        '/{owner_username}/datasets/{dataset_slug}/places/{place_id}',
         'place-list': '/{owner_username}/datasets/{dataset_slug}/places',
 
         'dataset-detail': '/{owner_username}/datasets/{dataset_slug}',
         'user-detail': '/{owner_username}',
-        'dataset-submission-list': '/{owner_username}/datasets/{dataset_slug}/{submission_set_name}',
+        'dataset-submission-list':
+        '/{owner_username}/datasets/{dataset_slug}/{submission_set_name}',
     }
 
     try:
@@ -119,7 +124,8 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
     except KeyError:
         raise ValueError('No API route named {} formatted.'.format(view_name))
 
-    url_params = dict([(key, urlquote_plus(val)) for key,val in kwargs.iteritems()])
+    url_params = dict([(key, urlquote_plus(val))
+                       for key, val in kwargs.iteritems()])
     url += route_template_string.format(**url_params)
 
     if format is not None:
@@ -127,7 +133,9 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
 
     return url
 
-class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRelatedField):
+
+class ShareaboutsRelatedField (ShareaboutsFieldMixin,
+                               serializers.HyperlinkedRelatedField):
     """
     Represents a Shareabouts relationship using hyperlinking.
     """
@@ -157,7 +165,8 @@ class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRel
             return
 
         kwargs = self.get_url_kwargs(obj)
-        return api_reverse(view_name, kwargs=kwargs, request=request, format=format)
+        return api_reverse(view_name, kwargs=kwargs, request=request,
+                           format=format)
 
 
 class DataSetRelatedField (ShareaboutsRelatedField):
@@ -184,16 +193,20 @@ class PlaceRelatedField (ShareaboutsRelatedField):
 
 class SubmissionSetRelatedField (ShareaboutsRelatedField):
     view_name = 'submission-list'
-    url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name')
+    url_arg_names = ('owner_username', 'dataset_slug', 'place_id',
+                     'submission_set_name')
     queryset = models.Submission.objects.all()
 
 
-class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedIdentityField):
+class ShareaboutsIdentityField (ShareaboutsFieldMixin,
+                                serializers.HyperlinkedIdentityField):
     read_only = True
 
     def __init__(self, *args, **kwargs):
-        view_name = kwargs.pop('view_name', None) or getattr(self, 'view_name', None)
-        super(ShareaboutsIdentityField, self).__init__(view_name=view_name, *args, **kwargs)
+        view_name = kwargs.pop('view_name', None) or getattr(self, 'view_name',
+                                                             None)
+        super(ShareaboutsIdentityField, self).__init__(view_name=view_name,
+                                                       *args, **kwargs)
 
     def get_attribute(self, obj):
         # Pass the entire object through to `to_representation()`,
@@ -214,7 +227,8 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
         if format and self.format and self.format != format:
             format = self.format
 
-        return api_reverse(view_name, kwargs=kwargs, request=request, format=format)
+        return api_reverse(view_name, kwargs=kwargs, request=request,
+                           format=format)
 
 
 class PlaceIdentityField (ShareaboutsIdentityField):
@@ -223,7 +237,8 @@ class PlaceIdentityField (ShareaboutsIdentityField):
 
 
 class SubmissionSetIdentityField (ShareaboutsIdentityField):
-    url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name')
+    url_arg_names = ('owner_username', 'dataset_slug', 'place_id',
+                     'submission_set_name')
     view_name = 'submission-list'
 
 
@@ -238,7 +253,8 @@ class DataSetSubmissionSetIdentityField (ShareaboutsIdentityField):
 
 
 class SubmissionIdentityField (ShareaboutsIdentityField):
-    url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id')
+    url_arg_names = ('owner_username', 'dataset_slug', 'place_id',
+                     'submission_set_name', 'submission_id')
     view_name = 'submission-detail'
 
 
@@ -265,7 +281,9 @@ class ActivityGenerator (object):
         silent_header = request.META.get('HTTP_X_SHAREABOUTS_SILENT', 'False')
         is_silent = silent_header.lower() in ('true', 't', 'yes', 'y')
         request_source = request.META.get('HTTP_REFERER', '')
-        return super(ActivityGenerator, self).save(silent=is_silent, source=request_source, **kwargs)
+        return super(ActivityGenerator, self).save(
+            silent=is_silent,
+            source=request_source, **kwargs)
 
 
 class EmptyModelSerializer (object):
@@ -920,11 +938,14 @@ class BaseSubmissionSerializer (SubmittedThingSerializer, serializers.ModelSeria
         model = models.Submission
         exclude = ('set_name',)
 
+
 class SimpleSubmissionSerializer (BaseSubmissionSerializer):
     class Meta (BaseSubmissionSerializer.Meta):
         read_only_fields = ('dataset', 'place')
 
-class SubmissionSerializer (BaseSubmissionSerializer, serializers.HyperlinkedModelSerializer):
+
+class SubmissionSerializer (BaseSubmissionSerializer,
+                            serializers.HyperlinkedModelSerializer):
     url = SubmissionIdentityField()
     dataset = DataSetRelatedField(queryset=models.Submission.objects.all())
     set = SubmissionSetRelatedField(source='*')
@@ -1019,7 +1040,6 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
             # Then, do:
             from .tasks import load_dataset_archive
             load_dataset_archive.apply_async(args=(obj.id, self.load_url,))
-
 
     def to_internal_value(self, data, files=None):
         if data and 'load_from_url' in data:
