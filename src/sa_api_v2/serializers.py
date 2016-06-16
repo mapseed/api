@@ -441,23 +441,28 @@ class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
         model = models.Attachment
         exclude = ('id', 'thing',)
 
-    def to_representation(self, obj):
-        obj = self.ensure_obj(obj)
-        data = {
-            'created_datetime': obj.created_datetime,
-            'updated_datetime': obj.updated_datetime,
-            'file': obj.file.storage.url(obj.file.name),
-            'name': obj.name
-        }
-        fields = self.get_fields()
+    # TODO: We may need to re-implement this if want support for serving HTML
+    # in the browseable api form
+    # def to_representation(self, obj):
+    #     obj = self.ensure_obj(obj)
+    #     data = {
+    #         'created_datetime': obj.created_datetime,
+    #         'updated_datetime': obj.updated_datetime,
+    #         'file': obj.file.storage.url(obj.file.name),
+    #         'name': obj.name
+    #     }
+    #     fields = self.get_fields()
 
-        # Construct a SortedDictWithMetaData to get the brosable API form
-        ret = self._dict_class(data)
-        ret.fields = self._dict_class()
-        for field_name, field in fields.iteritems():
-            value = data[field_name]
-            ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
-        return ret
+    #     # Construct a ReturnDict (a subclass of collections.OrderedDict)
+    #     # to get the browsable API form
+    #     ret = self._dict_class(data)
+    #     # ret = super(AttachmentSerializer,
+    #     #             self).to_representation(self.instance)
+    #     ret.fields = self._dict_class()
+    #     for field_name, field in fields.iteritems():
+    #         value = data[field_name]
+    #         ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
+    #     return ret
 
 
 class DataSetPermissionSerializer (serializers.ModelSerializer):
@@ -915,45 +920,48 @@ class SubmissionSerializer (BaseSubmissionSerializer, serializers.HyperlinkedMod
 
 
 # DataSet serializers
-class BaseDataSetSerializer (EmptyModelSerializer, serializers.ModelSerializer):
+class BaseDataSetSerializer (EmptyModelSerializer,
+                             serializers.ModelSerializer):
     class Meta:
         model = models.DataSet
 
-    def to_representation(self, obj):
-        obj = self.ensure_obj(obj)
-        fields = self.get_fields()
+    # TODO: We may need to re-implement this if want support for serving HTML
+    # in the browseable api form
+    # def to_representation(self, obj):
+    #     obj = self.ensure_obj(obj)
+    #     fields = self.get_fields()
 
-        data = {
-            'id': obj.pk,
-            'slug': obj.slug,
-            'display_name': obj.display_name,
-            'owner': fields['owner'].to_representation(obj) if obj.owner_id else None,
-        }
+    #     data = {
+    #         'id': obj.pk,
+    #         'slug': obj.slug,
+    #         'display_name': obj.display_name,
+    #         'owner': fields['owner'].to_representation(obj) if obj.owner_id else None,
+    #     }
 
-        if 'places' in fields:
-            fields['places'].context = self.context
-            data['places'] = fields['places'].to_representation(obj)
+    #     if 'places' in fields:
+    #         fields['places'].context = self.context
+    #         data['places'] = fields['places'].to_representation(obj)
 
-        if 'submission_sets' in fields:
-            fields['submission_sets'].context = self.context
-            data['submission_sets'] = fields['submission_sets'].to_representation(obj)
+    #     if 'submission_sets' in fields:
+    #         fields['submission_sets'].context = self.context
+    #         data['submission_sets'] = fields['submission_sets'].to_representation(obj)
 
-        if 'url' in fields:
-            data['url'] = fields['url'].to_representation(obj)
+    #     if 'url' in fields:
+    #         data['url'] = fields['url'].to_representation(obj)
 
-        if 'keys' in fields: data['keys'] = fields['keys'].to_representation(obj)
-        if 'origins' in fields: data['origins'] = fields['origins'].to_representation(obj)
-        if 'groups' in fields: data['groups'] = fields['groups'].to_representation(obj)
-        if 'permissions' in fields: data['permissions'] = fields['permissions'].to_representation(obj)
+    #     if 'keys' in fields: data['keys'] = fields['keys'].to_representation(obj)
+    #     if 'origins' in fields: data['origins'] = fields['origins'].to_representation(obj)
+    #     if 'groups' in fields: data['groups'] = fields['groups'].to_representation(obj)
+    #     if 'permissions' in fields: data['permissions'] = fields['permissions'].to_representation(obj)
 
-        # Construct a SortedDictWithMetaData to get the brosable API form
-        ret = self._dict_class(data)
-        ret.fields = self._dict_class()
-        for field_name, field in fields.iteritems():
-            default = getattr(field, 'get_default_value', lambda: None)()
-            value = data.get(field_name, default)
-            ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
-        return ret
+    #     # Construct a SortedDictWithMetaData to get the brosable API form
+    #     ret = self._dict_class(data)
+    #     ret.fields = self._dict_class()
+    #     for field_name, field in fields.iteritems():
+    #         default = getattr(field, 'get_default_value', lambda: None)()
+    #         value = data.get(field_name, default)
+    #         ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
+    #     return ret
 
 class SimpleDataSetSerializer (BaseDataSetSerializer, serializers.ModelSerializer):
     keys = ApiKeySerializer(many=True, read_only=False)
