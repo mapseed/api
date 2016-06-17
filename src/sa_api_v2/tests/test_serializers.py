@@ -49,10 +49,14 @@ class TestActionSerializer (TestCase):
         dataset = DataSet.objects.create(slug='data',
                                          owner_id=owner.id)
         place = Place.objects.create(dataset=dataset, geometry='POINT(2 3)')
-        comment = Submission.objects.create(dataset=dataset, place=place, set_name='comments')
+        comment = Submission.objects.create(dataset=dataset,
+                                            place=place,
+                                            set_name='comments')
 
-        self.place_action = Action.objects.create(thing=place.submittedthing_ptr)
-        self.comment_action = Action.objects.create(thing=comment.submittedthing_ptr)
+        self.place_action = Action.objects.create(
+            thing=place.submittedthing_ptr)
+        self.comment_action = Action.objects.create(
+            thing=comment.submittedthing_ptr)
 
     def test_place_action_attributes(self):
         serializer = ActionSerializer(self.place_action)
@@ -80,8 +84,8 @@ class TestActionSerializer (TestCase):
 
     def test_prejoined_place_action_attributes(self):
         action = Action.objects.all()\
-            .select_related('thing__place' ,'thing__submission')\
-            .filter(thing=self.place_action.thing)[0]
+                               .select_related('thing__place', 'thing__submission')\
+                               .filter(thing=self.place_action.thing)[0]
 
         serializer = ActionSerializer(action)
         serializer.context = {
@@ -145,7 +149,8 @@ class TestSocialUserSerializer (TestCase):
         self.assertIn('avatar_url', serializer.data)
 
         self.assertEqual(serializer.data['name'], 'Mjumbe Poe')
-        self.assertEqual(serializer.data['avatar_url'], 'http://a0.twimg.com/profile_images/1101892515/dreadlocked_browntwitterbird-248x270_bigger.png')
+        self.assertEqual(serializer.data['avatar_url'],
+                         'http://a0.twimg.com/profile_images/1101892515/dreadlocked_browntwitterbird-248x270_bigger.png')
 
     def test_facebook_user_attributes(self):
         serializer = UserSerializer(self.facebook_user)
@@ -154,7 +159,8 @@ class TestSocialUserSerializer (TestCase):
         self.assertIn('avatar_url', serializer.data)
 
         self.assertEqual(serializer.data['name'], 'Mjumbe Poe')
-        self.assertEqual(serializer.data['avatar_url'], 'https://fbcdn-profile-a.akamaihd.net/hprofile-ak-ash4/c17.0.97.97/55_512302020614_7565_s.jpg')
+        self.assertEqual(serializer.data['avatar_url'],
+                         'https://fbcdn-profile-a.akamaihd.net/hprofile-ak-ash4/c17.0.97.97/55_512302020614_7565_s.jpg')
 
     def test_no_social_user_attributes(self):
         serializer = UserSerializer(self.no_social_user)
@@ -181,7 +187,8 @@ class TestUserSerializer (TestCase):
             DataSet.objects.create(owner=self.owner, slug='ds2')
         ]
         self.groups = [
-            Group.objects.create(dataset=self.datasets[0], name='special users')
+            Group.objects.create(dataset=self.datasets[0],
+                                 name='special users')
         ]
 
         self.special_user._groups.add(self.groups[0])
@@ -204,7 +211,12 @@ class TestUserSerializer (TestCase):
     def test_full_serializer_returns_a_users_groups(self):
         serializer = FullUserSerializer(self.special_user)
         self.assertIn('groups', serializer.data)
-        self.assertEqual(serializer.data['groups'], [{'dataset': reverse('dataset-detail', kwargs={'dataset_slug': 'ds1', 'owner_username': 'my_owning_user'}), 'name': 'special users'}])
+        self.assertEqual(
+            serializer.data['groups'],
+            [{'dataset': reverse('dataset-detail',
+                                 kwargs={'dataset_slug': 'ds1',
+                                         'owner_username': 'my_owning_user'}),
+              'name': 'special users'}])
 
 
 class TestPlaceSerializer (TestCase):
@@ -219,9 +231,14 @@ class TestPlaceSerializer (TestCase):
         self.owner = User.objects.create(username='myuser')
         self.dataset = DataSet.objects.create(slug='data',
                                               owner_id=self.owner.id)
-        self.place = Place.objects.create(dataset=self.dataset, geometry='POINT(2 3)')
-        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
-        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
+        self.place = Place.objects.create(dataset=self.dataset,
+                                          geometry='POINT(2 3)')
+        Submission.objects.create(dataset=self.dataset,
+                                  place=self.place,
+                                  set_name='comments')
+        Submission.objects.create(dataset=self.dataset,
+                                  place=self.place,
+                                  set_name='comments')
 
     def test_can_serlialize_a_null_instance(self):
         request = RequestFactory().get('')
@@ -240,7 +257,8 @@ class TestPlaceSerializer (TestCase):
         serializer = PlaceSerializer(self.place)
         serializer.context = {'request': request}
 
-        self.assertEqual(serializer.data['submission_sets']['comments']['length'], 2)
+        self.assertEqual(
+            serializer.data['submission_sets']['comments']['length'], 2)
 
 
 class TestSubmissionSerializer (TestCase):
@@ -274,9 +292,14 @@ class TestDataSetSerializer (TestCase):
         self.owner = User.objects.create(username='myuser')
         self.dataset = DataSet.objects.create(slug='data',
                                               owner_id=self.owner.id)
-        self.place = Place.objects.create(dataset=self.dataset, geometry='POINT(2 3)')
-        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
-        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
+        self.place = Place.objects.create(dataset=self.dataset,
+                                          geometry='POINT(2 3)')
+        Submission.objects.create(dataset=self.dataset,
+                                  place=self.place,
+                                  set_name='comments')
+        Submission.objects.create(dataset=self.dataset,
+                                  place=self.place,
+                                  set_name='comments')
 
     def test_can_serlialize_a_null_instance(self):
         serializer = DataSetSerializer(None)

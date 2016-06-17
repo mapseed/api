@@ -1,6 +1,7 @@
 """
 DjangoRestFramework resources for the Shareabouts REST API.
 """
+from django.utils import six
 import ujson as json
 import re
 from collections import defaultdict
@@ -63,6 +64,7 @@ class GeometryField(serializers.Field):
 # ---------------------------
 #
 
+
 class ShareaboutsFieldMixin (object):
 
     # These names should match the names of the cache parameters, and should be
@@ -76,7 +78,8 @@ class ShareaboutsFieldMixin (object):
         if isinstance(obj, models.User):
             instance_kwargs = {'owner_username': obj.username}
         else:
-            instance_kwargs = obj.cache.get_cached_instance_params(obj.pk, lambda: obj)
+            instance_kwargs = obj.cache.get_cached_instance_params(obj.pk,
+                                                                   lambda: obj)
 
         url_kwargs = {}
         for arg_name in self.url_arg_names:
@@ -85,7 +88,8 @@ class ShareaboutsFieldMixin (object):
                 try:
                     arg_value = getattr(obj, arg_name)
                 except AttributeError:
-                    raise KeyError('No arg named %r in %r' % (arg_name, instance_kwargs))
+                    raise KeyError('No arg named %r in %r' % (arg_name,
+                                                              instance_kwargs))
             url_kwargs[arg_name] = arg_value
         return url_kwargs
 
@@ -105,12 +109,14 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
         'submission-detail': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}/{submission_set_name}/{submission_id}',
         'submission-list': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}/{submission_set_name}',
 
-        'place-detail': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}',
+        'place-detail':
+        '/{owner_username}/datasets/{dataset_slug}/places/{place_id}',
         'place-list': '/{owner_username}/datasets/{dataset_slug}/places',
 
         'dataset-detail': '/{owner_username}/datasets/{dataset_slug}',
         'user-detail': '/{owner_username}',
-        'dataset-submission-list': '/{owner_username}/datasets/{dataset_slug}/{submission_set_name}',
+        'dataset-submission-list':
+        '/{owner_username}/datasets/{dataset_slug}/{submission_set_name}',
     }
 
     try:
@@ -118,7 +124,8 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
     except KeyError:
         raise ValueError('No API route named {} formatted.'.format(view_name))
 
-    url_params = dict([(key, urlquote_plus(val)) for key,val in kwargs.iteritems()])
+    url_params = dict([(key, urlquote_plus(val))
+                       for key, val in kwargs.iteritems()])
     url += route_template_string.format(**url_params)
 
     if format is not None:
@@ -126,7 +133,9 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
 
     return url
 
-class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRelatedField):
+
+class ShareaboutsRelatedField (ShareaboutsFieldMixin,
+                               serializers.HyperlinkedRelatedField):
     """
     Represents a Shareabouts relationship using hyperlinking.
     """
@@ -140,6 +149,12 @@ class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRel
             kwargs['queryset'] = self.queryset
         super(ShareaboutsRelatedField, self).__init__(*args, **kwargs)
 
+    def get_attribute(self, obj):
+        # Pass the entire object through to `to_representation()`,
+        # instead of the standard attribute lookup. Otherwise,
+        # obj is just a DRF relations.PKOnlyObject.
+        return obj
+
     def to_representation(self, obj):
         view_name = self.view_name
         request = self.context.get('request', None)
@@ -150,7 +165,8 @@ class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRel
             return
 
         kwargs = self.get_url_kwargs(obj)
-        return api_reverse(view_name, kwargs=kwargs, request=request, format=format)
+        return api_reverse(view_name, kwargs=kwargs, request=request,
+                           format=format)
 
 
 class DataSetRelatedField (ShareaboutsRelatedField):
@@ -177,22 +193,30 @@ class PlaceRelatedField (ShareaboutsRelatedField):
 
 class SubmissionSetRelatedField (ShareaboutsRelatedField):
     view_name = 'submission-list'
-    url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name')
+    url_arg_names = ('owner_username', 'dataset_slug', 'place_id',
+                     'submission_set_name')
     queryset = models.Submission.objects.all()
 
 
-class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedIdentityField):
+class ShareaboutsIdentityField (ShareaboutsFieldMixin,
+                                serializers.HyperlinkedIdentityField):
     read_only = True
 
     def __init__(self, *args, **kwargs):
-        view_name = kwargs.pop('view_name', None) or getattr(self, 'view_name', None)
-        super(ShareaboutsIdentityField, self).__init__(view_name=view_name, *args, **kwargs)
+        view_name = kwargs.pop('view_name', None) or getattr(self, 'view_name',
+                                                             None)
+        super(ShareaboutsIdentityField, self).__init__(view_name=view_name,
+                                                       *args, **kwargs)
 
-    # TODO: The `field_to_native()` method was removed in DRF 3.0,
-    # so we'll need to use another method, like `get_attribute`
-    # http://www.django-rest-framework.org/topics/3.0-announcement/#serializers
-    def field_to_native(self, obj, field_name):
-        if obj.pk is None: return None
+    def get_attribute(self, obj):
+        # Pass the entire object through to `to_representation()`,
+        # instead of the standard attribute lookup. Otherwise,
+        # obj is just a DRF relations.PKOnlyObject.
+        return obj
+
+    def to_representation(self, obj):
+        if obj.pk is None:
+            return None
 
         request = self.context.get('request', None)
         format = self.context.get('format', None)
@@ -203,7 +227,8 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
         if format and self.format and self.format != format:
             format = self.format
 
-        return api_reverse(view_name, kwargs=kwargs, request=request, format=format)
+        return api_reverse(view_name, kwargs=kwargs, request=request,
+                           format=format)
 
 
 class PlaceIdentityField (ShareaboutsIdentityField):
@@ -212,7 +237,8 @@ class PlaceIdentityField (ShareaboutsIdentityField):
 
 
 class SubmissionSetIdentityField (ShareaboutsIdentityField):
-    url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name')
+    url_arg_names = ('owner_username', 'dataset_slug', 'place_id',
+                     'submission_set_name')
     view_name = 'submission-list'
 
 
@@ -227,7 +253,8 @@ class DataSetSubmissionSetIdentityField (ShareaboutsIdentityField):
 
 
 class SubmissionIdentityField (ShareaboutsIdentityField):
-    url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id')
+    url_arg_names = ('owner_username', 'dataset_slug', 'place_id',
+                     'submission_set_name', 'submission_id')
     view_name = 'submission-detail'
 
 
@@ -254,7 +281,9 @@ class ActivityGenerator (object):
         silent_header = request.META.get('HTTP_X_SHAREABOUTS_SILENT', 'False')
         is_silent = silent_header.lower() in ('true', 't', 'yes', 'y')
         request_source = request.META.get('HTTP_REFERER', '')
-        return super(ActivityGenerator, self).save(silent=is_silent, source=request_source, **kwargs)
+        return super(ActivityGenerator, self).save(
+            silent=is_silent,
+            source=request_source, **kwargs)
 
 
 class EmptyModelSerializer (object):
@@ -430,23 +459,28 @@ class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
         model = models.Attachment
         exclude = ('id', 'thing',)
 
-    def to_representation(self, obj):
-        obj = self.ensure_obj(obj)
-        data = {
-            'created_datetime': obj.created_datetime,
-            'updated_datetime': obj.updated_datetime,
-            'file': obj.file.storage.url(obj.file.name),
-            'name': obj.name
-        }
-        fields = self.get_fields()
+    # TODO: We may need to re-implement this if want support for serving HTML
+    # in the browseable api form
+    # def to_representation(self, obj):
+    #     obj = self.ensure_obj(obj)
+    #     data = {
+    #         'created_datetime': obj.created_datetime,
+    #         'updated_datetime': obj.updated_datetime,
+    #         'file': obj.file.storage.url(obj.file.name),
+    #         'name': obj.name
+    #     }
+    #     fields = self.get_fields()
 
-        # Construct a SortedDictWithMetaData to get the brosable API form
-        ret = self._dict_class(data)
-        ret.fields = self._dict_class()
-        for field_name, field in fields.iteritems():
-            value = data[field_name]
-            ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
-        return ret
+    #     # Construct a ReturnDict (a subclass of collections.OrderedDict)
+    #     # to get the browsable API form
+    #     ret = self._dict_class(data)
+    #     # ret = super(AttachmentSerializer,
+    #     #             self).to_representation(self.instance)
+    #     ret.fields = self._dict_class()
+    #     for field_name, field in fields.iteritems():
+    #         value = data[field_name]
+    #         ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
+    #     return ret
 
 
 class DataSetPermissionSerializer (serializers.ModelSerializer):
@@ -490,11 +524,13 @@ class BaseGroupSerializer (serializers.ModelSerializer):
         model = models.Group
         exclude = ('submitters', 'id')
 
+
 class SimpleGroupSerializer (BaseGroupSerializer):
     permissions = GroupPermissionSerializer(many=True)
 
     class Meta (BaseGroupSerializer.Meta):
         exclude = ('id', 'dataset', 'submitters')
+
 
 class GroupSerializer (BaseGroupSerializer):
     dataset = DataSetRelatedField(queryset=models.Group.objects.all())
@@ -502,13 +538,20 @@ class GroupSerializer (BaseGroupSerializer):
     class Meta (BaseGroupSerializer.Meta):
         pass
 
+    def to_representation(self, obj):
+        ret = {}
+        ret['dataset'] = six.text_type(self.fields['dataset']
+                                       .to_representation(obj.dataset))
+        ret['name'] = obj.name
+        return ret
+
 
 # User serializers
 class BaseUserSerializer (serializers.ModelSerializer):
-    name = serializers.SerializerMethodField('get_name')
-    avatar_url = serializers.SerializerMethodField('get_avatar_url')
-    provider_type = serializers.SerializerMethodField('get_provider_type')
-    provider_id = serializers.SerializerMethodField('get_provider_id')
+    name = serializers.SerializerMethodField()
+    avatar_url = serializers.SerializerMethodField()
+    provider_type = serializers.SerializerMethodField()
+    provider_id = serializers.SerializerMethodField()
 
     strategies = {
         'twitter': TwitterUserDataStrategy(),
@@ -519,7 +562,9 @@ class BaseUserSerializer (serializers.ModelSerializer):
 
     class Meta:
         model = models.User
-        exclude = ('first_name', 'last_name', 'email', 'password', 'is_staff', 'is_active', 'is_superuser', 'last_login', 'date_joined', 'user_permissions')
+        exclude = ('first_name', 'last_name', 'email', 'password', 'is_staff',
+                   'is_active', 'is_superuser', 'last_login', 'date_joined',
+                   'user_permissions')
 
     def get_strategy(self, obj):
         for social_auth in obj.social_auth.all():
@@ -568,6 +613,7 @@ class SimpleUserSerializer (BaseUserSerializer):
     class Meta (BaseUserSerializer.Meta):
         exclude = BaseUserSerializer.Meta.exclude + ('groups',)
 
+
 class UserSerializer (BaseUserSerializer):
     """
     Generates a partial user representation, for use as submitter data in API
@@ -575,6 +621,7 @@ class UserSerializer (BaseUserSerializer):
     """
     class Meta (BaseUserSerializer.Meta):
         exclude = BaseUserSerializer.Meta.exclude + ('groups',)
+
 
 class FullUserSerializer (BaseUserSerializer):
     """
@@ -590,9 +637,9 @@ class FullUserSerializer (BaseUserSerializer):
     def to_representation(self, obj):
         data = super(FullUserSerializer, self).to_representation(obj)
         if obj:
-            group_field = self.base_fields['groups']
-            group_field.initialize(parent=self, field_name='groups')
-            data['groups'] = group_field.field_to_native(obj, 'groups')
+            group_serializer = self.fields['groups']
+            groups_field = obj.get_groups()
+            data['groups'] = group_serializer.to_representation(groups_field)
         return data
 
 
@@ -710,7 +757,8 @@ class SubmittedThingSerializer (ActivityGenerator, DataBlobProcessor):
 
 
 # Place serializers
-class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer):
+class BasePlaceSerializer (SubmittedThingSerializer,
+                           serializers.ModelSerializer):
     geometry = GeometryField(format='wkt')
     attachments = AttachmentSerializer(read_only=True, many=True)
     submitter = SimpleUserSerializer(read_only=False)
@@ -747,7 +795,8 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
             dataset = getattr(request, 'get_dataset', lambda: None)()
-            if not check_data_permission(user, client, 'retrieve', dataset, set_name):
+            if not check_data_permission(user, client, 'retrieve', dataset,
+                                         set_name):
                 continue
 
             summaries[set_name] = self.summary_to_native(set_name, submissions)
@@ -773,11 +822,12 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
             dataset = getattr(request, 'get_dataset', lambda: None)()
-            if not check_data_permission(user, client, 'retrieve', dataset, set_name):
+            if not check_data_permission(user, client, 'retrieve', dataset,
+                                         set_name):
                 continue
 
-            # We know that the submission datasets will be the same as the place
-            # dataset, so say so and avoid an extra query for each.
+            # We know that the submission datasets will be the same as the
+            # place dataset, so say so and avoid an extra query for each.
             for submission in submissions:
                 submission.dataset = place.dataset
 
@@ -808,7 +858,7 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
         }
 
         if 'url' in fields:
-            data['url'] = fields['url'].field_to_native(obj, 'pk')
+            data['url'] = fields['url'].to_representation(obj)
 
         data = self.explode_data_blob(data)
 
@@ -828,11 +878,14 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
 
         return data
 
+
 class SimplePlaceSerializer (BasePlaceSerializer):
     class Meta (BasePlaceSerializer.Meta):
         read_only_fields = ('dataset',)
 
-class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializer):
+
+class PlaceSerializer (BasePlaceSerializer,
+                       serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
     dataset = DataSetRelatedField(queryset=models.Place.objects.all())
     submitter = UserSerializer(read_only=False)
@@ -842,8 +895,7 @@ class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializ
 
     def summary_to_native(self, set_name, submissions):
         url_field = SubmissionSetIdentityField()
-        url_field.initialize(parent=self, field_name=None)
-        set_url = url_field.field_to_native(submissions[0], None)
+        set_url = url_field.to_representation(submissions[0])
 
         return {
             'name': set_name,
@@ -870,11 +922,14 @@ class BaseSubmissionSerializer (SubmittedThingSerializer, serializers.ModelSeria
         model = models.Submission
         exclude = ('set_name',)
 
+
 class SimpleSubmissionSerializer (BaseSubmissionSerializer):
     class Meta (BaseSubmissionSerializer.Meta):
         read_only_fields = ('dataset', 'place')
 
-class SubmissionSerializer (BaseSubmissionSerializer, serializers.HyperlinkedModelSerializer):
+
+class SubmissionSerializer (BaseSubmissionSerializer,
+                            serializers.HyperlinkedModelSerializer):
     url = SubmissionIdentityField()
     dataset = DataSetRelatedField(queryset=models.Submission.objects.all())
     set = SubmissionSetRelatedField(source='*')
@@ -886,45 +941,48 @@ class SubmissionSerializer (BaseSubmissionSerializer, serializers.HyperlinkedMod
 
 
 # DataSet serializers
-class BaseDataSetSerializer (EmptyModelSerializer, serializers.ModelSerializer):
+class BaseDataSetSerializer (EmptyModelSerializer,
+                             serializers.ModelSerializer):
     class Meta:
         model = models.DataSet
 
-    def to_representation(self, obj):
-        obj = self.ensure_obj(obj)
-        fields = self.get_fields()
+    # TODO: We may need to re-implement this if want support for serving HTML
+    # in the browseable api form
+    # def to_representation(self, obj):
+    #     obj = self.ensure_obj(obj)
+    #     fields = self.get_fields()
 
-        data = {
-            'id': obj.pk,
-            'slug': obj.slug,
-            'display_name': obj.display_name,
-            'owner': fields['owner'].field_to_native(obj, 'owner') if obj.owner_id else None,
-        }
+    #     data = {
+    #         'id': obj.pk,
+    #         'slug': obj.slug,
+    #         'display_name': obj.display_name,
+    #         'owner': fields['owner'].to_representation(obj) if obj.owner_id else None,
+    #     }
 
-        if 'places' in fields:
-            fields['places'].context = self.context
-            data['places'] = fields['places'].field_to_native(obj, 'places')
+    #     if 'places' in fields:
+    #         fields['places'].context = self.context
+    #         data['places'] = fields['places'].to_representation(obj)
 
-        if 'submission_sets' in fields:
-            fields['submission_sets'].context = self.context
-            data['submission_sets'] = fields['submission_sets'].field_to_native(obj, 'submission_sets')
+    #     if 'submission_sets' in fields:
+    #         fields['submission_sets'].context = self.context
+    #         data['submission_sets'] = fields['submission_sets'].to_representation(obj)
 
-        if 'url' in fields:
-            data['url'] = fields['url'].field_to_native(obj, 'url')
+    #     if 'url' in fields:
+    #         data['url'] = fields['url'].to_representation(obj)
 
-        if 'keys' in fields: data['keys'] = fields['keys'].field_to_native(obj, 'keys')
-        if 'origins' in fields: data['origins'] = fields['origins'].field_to_native(obj, 'origins')
-        if 'groups' in fields: data['groups'] = fields['groups'].field_to_native(obj, 'groups')
-        if 'permissions' in fields: data['permissions'] = fields['permissions'].field_to_native(obj, 'permissions')
+    #     if 'keys' in fields: data['keys'] = fields['keys'].to_representation(obj)
+    #     if 'origins' in fields: data['origins'] = fields['origins'].to_representation(obj)
+    #     if 'groups' in fields: data['groups'] = fields['groups'].to_representation(obj)
+    #     if 'permissions' in fields: data['permissions'] = fields['permissions'].to_representation(obj)
 
-        # Construct a SortedDictWithMetaData to get the brosable API form
-        ret = self._dict_class(data)
-        ret.fields = self._dict_class()
-        for field_name, field in fields.iteritems():
-            default = getattr(field, 'get_default_value', lambda: None)()
-            value = data.get(field_name, default)
-            ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
-        return ret
+    #     # Construct a SortedDictWithMetaData to get the brosable API form
+    #     ret = self._dict_class(data)
+    #     ret.fields = self._dict_class()
+    #     for field_name, field in fields.iteritems():
+    #         default = getattr(field, 'get_default_value', lambda: None)()
+    #         value = data.get(field_name, default)
+    #         ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
+    #     return ret
 
 class SimpleDataSetSerializer (BaseDataSetSerializer, serializers.ModelSerializer):
     keys = ApiKeySerializer(many=True, read_only=False)
@@ -967,7 +1025,6 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
             from .tasks import load_dataset_archive
             load_dataset_archive.apply_async(args=(obj.id, self.load_url,))
 
-
     def to_internal_value(self, data, files=None):
         if data and 'load_from_url' in data:
             self.load_url = data.pop('load_from_url')
@@ -978,8 +1035,8 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
 
 # Action serializer
 class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
-    target_type = serializers.SerializerMethodField('get_target_type')
-    target = serializers.SerializerMethodField('get_target')
+    target_type = serializers.SerializerMethodField()
+    target = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Action
@@ -1003,7 +1060,10 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
         except models.Place.DoesNotExist:
             serializer = SubmissionSerializer(obj.thing.submission)
 
+        # NOTE: If we need 'context' accessible within the serializer's fields,
+        # we can pass it in as a kwarg in the serializer constructor above.
         serializer.context = self.context
+
         return serializer.data
 
 
