@@ -32,6 +32,13 @@ read_env()
 DEBUG = (os.environ.get('DEBUG', True) in ["True", "true", True])
 SHOW_DEBUG_TOOLBAR = False
 
+TZ = (os.environ.get('TZ',  'Universal'))
+print("local_settings TZ:", TZ)
+USE_TZ = True
+
+import ipdb
+ipdb.set_trace()
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
