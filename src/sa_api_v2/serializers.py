@@ -803,7 +803,7 @@ class BasePlaceSerializer (SubmittedThingSerializer,
 
         return summaries
 
-    def set_to_native(self, set_name, submissions):
+    def set_to_representation(self, set_name, submissions):
         serializer = SimpleSubmissionSerializer(submissions, many=True)
         serializer.initialize(parent=self, field_name=None)
         return serializer.data
@@ -831,7 +831,7 @@ class BasePlaceSerializer (SubmittedThingSerializer,
             for submission in submissions:
                 submission.dataset = place.dataset
 
-            details[set_name] = self.set_to_native(set_name, submissions)
+            details[set_name] = self.set_to_representation(set_name, submissions)
 
         return details
 
@@ -903,7 +903,7 @@ class PlaceSerializer (BasePlaceSerializer,
             'url': set_url,
         }
 
-    def set_to_native(self, set_name, submissions):
+    def set_to_representation(self, set_name, submissions):
         serializer = SubmissionSerializer(submissions, many=True)
         serializer.initialize(parent=self, field_name=None)
         return serializer.data
