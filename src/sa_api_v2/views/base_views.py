@@ -250,6 +250,9 @@ class IsAllowedByDataPermissions(permissions.BasePermission):
         if request.method == 'OPTIONS':
             return True
 
+        if request.method in permissions.SAFE_METHODS:
+            return True
+
         # Let the owner do whatever they want
         if is_owner(request.user, request):
             return True
