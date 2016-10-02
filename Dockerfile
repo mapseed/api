@@ -22,8 +22,8 @@ RUN apt-get install -y python-dev python-distribute python-pip
 RUN apt-get install -y python-psycopg2 postgresql libpq-dev postgresql-9.4-postgis-2.1 postgis postgresql-9.4
 
 # If you want to deploy from an online host git repository, you can use the following command to clone:
-RUN git clone https://github.com/smartercleanup/api.git && cd api && git checkout lukeswart/1.7-dependencies-upgrade && cd -
-# local testing:
+RUN git clone https://github.com/smartercleanup/api.git && cd api && git checkout master && cd -
+# # for local testing, cd into project root and uncomment this line:
 # ADD . api
 
 # Get pip to download and install requirements:
