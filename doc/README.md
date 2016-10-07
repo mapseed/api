@@ -29,7 +29,7 @@ For ubuntu 14.04:
     
     sudo apt-get install postgresql postgis libpq-dev postgresql-9.4 postgresql-9.4-postgis-2.1 postgresql-server-dev-9.4 python-psycopg2 binutils
 
-for ubuntu 16.04:
+For ubuntu 16.04:
 
     sudo apt-get install postgresql postgis libpq-dev postgresql-9.5 postgresql-9.5-postgis-2.2 postgresql-server-dev-9.5 python-psycopg2 binutils libjpeg8-dev
 
