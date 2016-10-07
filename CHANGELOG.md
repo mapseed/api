@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
  - Allow non-dataset owners to access api (pending permissions checks)
 
-## [0.6.3] - 2014-08-09
+## [0.6.3] - 2016-10-01
 ### Added
  - Added CHANGELOG
 ### Changed
@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 0.5.0 - 2015-09-25
 
-[Unreleased]: https://github.com/olivierlacan/keep-a-changelog/compare/0.6.3...HEAD
+[Unreleased]: https://github.com/smartercleanup/api/compare/0.6.3...HEAD
 [0.6.3]: https://github.com/smartercleanup/api/compare/0.6.2...0.6.3
 [0.6.2]: https://github.com/smartercleanup/api/compare/0.6.1...0.6.2
 [0.6.1]: https://github.com/smartercleanup/api/compare/0.6.0...0.6.1
