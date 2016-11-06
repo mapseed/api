@@ -1,12 +1,13 @@
 from __future__ import print_function
 from django.core.management.base import BaseCommand
 import sys
+import re
 
-from ... import models as sa_models
-from ... import forms
+#from ... import models as sa_models
+#from ... import forms
 # for manually testing with `./manage.py shell` commandline:
-# from sa_api_v2 import models as sa_models
-# from sa_api_v2 import forms
+from sa_api_v2 import models as sa_models
+from sa_api_v2 import forms
 
 import datetime
 import json
@@ -20,23 +21,46 @@ json_filepathname = sys.argv[2]
 DATASET_SLUG = "restoration"
 DATASET_ID = "restoration"
 
+# Set to False to hide the metadata section of the place detail view.
+SHOW_METADATA = False
+
 # Names of source data objects to insert into a submittedthing's JSON data blob.
 # All fields within each target object will be inserted into the data blob.
 # EXAMPLE: DATA_BLOB_TARGET_OBJECTS = ["properties"]
 DATA_BLOB_TARGET_OBJECTS = ["properties"]
 
-# Names of other top-level fields to add to the JSON data blob.
-# List field names either as a string, or as a tuple of two strings.
-# If listed as a tuple, the first item in the tuple should be the source
+# Properties to add under a dedicated "style" object in the JSON blob. The value
+# associated with each key below will be saved. This is useful for converting source
+# data style names to the styles names expected by Leaflet.
+STYLE_PROPERTIES = {
+    "marker-color": "marker-color",
+    "marker-symbol": "marker-symbol",
+    "marker-size": "marker-size",
+    "stroke-width": "weight",
+    "stroke-opacity": "opacity",
+    "fill-opacity": "fillOpacity",
+    "stroke": "color",
+    "fill": "fillColor"
+}
+
+# An optional pattern to search for and remove in the description field of each
+# data object.
+# Strip out titles found in leading <hx></hx> or <b></b> tags:
+STRIP_PATTERN = re.compile("(^\s*<(h[0-9]|b)>.+<(\/h[0-9]|\/b)>)\n*")
+
+# Names of other top-level fields to add to the JSON data blob. List field names 
+# as a tuple of two strings. The first item in the tuple should be the source
 # data field name; the second should be the field name to use in the
-# submittedthing's JSON data blob. This is useful for overlapping
-# source data field names.
-# EXAMPLE: DATA_BLOB_TARGET_FIELDS = ["location_type", ("title", "url-title")]
-DATA_BLOB_TARGET_FIELDS = ["location_type", ("title", "url-title")]
+# submittedthing's JSON data blob.
+# EXAMPLE: DATA_BLOB_TARGET_FIELDS = [("location_type", "location_type"), ("title", "url-title")]
+DATA_BLOB_TARGET_FIELDS = [
+    ("location_type", "location_type"), 
+    ("title", "url-title")
+]
 
 # Names of fields to ignore. Fields that conflict with internal shareabouts
 # fields (like "id") should be ignored, or remapped to another name.
-IGNORED_FIELDS = ["id"]
+IGNORED_FIELDS = ["id", "Description", "Title"]
 
 IS_VISIBLE = True
 DEFAULT_USERNAME = "thebestguest"
@@ -80,18 +104,26 @@ class Command(BaseCommand):
         # Handle submittedthing JSON data blob
         data = {
             "datasetSlug": DATASET_SLUG,
-            "datasetId": DATASET_ID
+            "datasetId": DATASET_ID,
+            "style": {},
+            "showMetadata": SHOW_METADATA
         }
         for target in DATA_BLOB_TARGET_OBJECTS:
             for key, value in item[target].items():
+                # apply strip patter
+                if key == "description":
+                    value = STRIP_PATTERN.sub("", value)
+                # skip ignored fields and style object fields
                 if key not in IGNORED_FIELDS:
-                    data[key] = value
+                    if key in STYLE_PROPERTIES:
+                        if value != "":
+                            data["style"][STYLE_PROPERTIES[key]] = value
+                    else:
+                        data[key] = value
 
         for target in DATA_BLOB_TARGET_FIELDS:
-            if (isinstance(target, basestring) and target not in IGNORED_FIELDS):
-                data[target] = item[target]
-            elif (isinstance(target, tuple) and target not in IGNORED_FIELDS):
-                data[target[1]] = item[target[0]]
+            if target not in IGNORED_FIELDS:
+                data[target[1]] = item[target[0]]   
 
         data = json.dumps(data)
 
