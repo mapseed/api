@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
  - Allow non-dataset owners to access api (pending permissions checks)
 
+## [0.6.4] - 2016-11-05
+### Added
+ - Django loginas from upstream
+### Changed
+ - Django 1.7.1 -> 1.7.11
+
 ## [0.6.3] - 2016-10-01
 ### Added
  - Added CHANGELOG
