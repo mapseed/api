@@ -251,6 +251,9 @@ class IsAllowedByDataPermissions(permissions.BasePermission):
         if request.method == 'OPTIONS':
             return True
 
+        if request.method in permissions.SAFE_METHODS:
+            return True
+
         # Let the owner do whatever they want
         if is_owner(request.user, request):
             return True
@@ -562,7 +565,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     """
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     parser_classes = (JSONParser, FormParser, MultiPartParser)
-    permission_classes = (IsOwnerOrReadOnly, IsAllowedByDataPermissions)
+    permission_classes = (IsAllowedByDataPermissions, )
     authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = (apikey.auth.ApiKeyAuthentication, cors.auth.OriginAuthentication)
     content_negotiation_class = ShareaboutsContentNegotiation
