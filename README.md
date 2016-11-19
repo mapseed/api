@@ -1,3 +1,5 @@
+[![Build Status](https://secure.travis-ci.org/smartercleanup/api.png)](http://travis-ci.org/smartercleanup/api)
+
 Hey Duwamish API
 ===============
 
