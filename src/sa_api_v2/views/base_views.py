@@ -152,17 +152,6 @@ def is_really_logged_in(user, request):
             not is_origin_auth(auth))
 
 
-class IsLoggedInOwner(permissions.BasePermission):
-    def has_permission(self, request, view):
-        if not is_really_logged_in(request.user, request):
-            return False
-
-        if request.user.is_superuser or is_owner(request.user, request):
-            return True
-
-        return False
-
-
 class IsOwnerOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         """
