@@ -1,21 +1,29 @@
-# https://github.com/travis-ci/travis-ci/wiki/.travis.yml-options
-
-install: "ci/install.sh"
-script: "src/manage.py test project sa_api_v2 remote_client_user --with-coverage --cover-package=sa_api_v2 --cover-package=remote_client_user"
+sudo: required
+dist: trusty
+language: python
 python:
   - "2.7"
-notifications:
-  irc:
-    channels:
-      - "irc.freenode.org#shareabouts"
-    on_success: change
-    on_failure: always
-  email:
-    recipients:
-     - dev@openplans.org
-    on_success: change
-    on_failure: always
 
-# branches:
-#   only:
-#     - master
+# docker-compose is installed by default: https://docs.travis-ci.com/user/docker/#Using-Docker-Compose
+before_install:
+  - echo "before_install, pwd is `pwd`"
+  - echo "before_install, ls -la `ls -la`"
+  - sudo apt-get install -y git
+  - git clone https://github.com/LukeSwart/docker-shareabouts.git
+  - docker pull kartoza/postgis:9.4-2.1
+  - cd docker-shareabouts/backend && mv .env.template .env && ./letsdeploy.sh && cd -
+  - echo "before_install, docker ps, `docker ps`"
+  - echo "before_install, docker logs development_postgis_1, `docker logs development_postgis_1`"
+
+install:
+  - echo "install, pwd is `pwd`"
+  - echo "install, ls -la `ls -la`"
+  - echo "install, docker ps, `docker ps`"
+  - echo "install, docker logs development_postgis_1, `docker logs development_postgis_1`"
+  - pip install -r requirements.txt
+
+script:
+  - src/manage.py test
+
+services:
+  - docker
