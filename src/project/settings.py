@@ -1,4 +1,6 @@
 from os import environ
+import raven
+import os
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -233,6 +235,7 @@ SOUTH_MIGRATION_MODULES = {
     'djcelery': 'ignore',
 }
 
+
 # Debug toolbar
 def custom_show_toolbar(request):
     return SHOW_DEBUG_TOOLBAR
@@ -260,11 +263,12 @@ DEBUG_TOOLBAR_PANELS = (
 # (See the very end of the file for more debug toolbar settings)
 
 
-################################################################################
-#
+###############################################################################
 # Logging Configuration
-#
+###############################################################################
 
+# disable Django's own log configuration mechanism:
+LOGGING_CONFIG = None
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -275,7 +279,8 @@ LOGGING = {
     },
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(name)s: %(message)s %(process)d %(thread)d'
+            'format': '%(levelname)s %(asctime)s %(name)s: %(message)s ' +
+            '%(process)d %(thread)d'
         },
         'moderate': {
             'format': '%(levelname)s %(asctime)s %(name)s: %(message)s'
@@ -290,21 +295,32 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'moderate'
         },
+        'sentry': {
+            'level': 'WARNING',
+            'class': 'raven.contrib.django.raven_compat.handlers.' +
+            'SentryHandler',
+            'formatter': 'verbose',
+            'tags': {'custom-tag': 'x'},
+        },
     },
     'loggers': {
+        'root': {
+            'handlers': ['console', 'sentry'],
+            'level': 'WARNING'
+        },
         'django.request': {
-            'handlers': ['console'],
+            'handlers': ['console', 'sentry'],
             'level': 'ERROR',
             'propagate': True,
         },
         'sa_api_v2': {
-            'handlers': ['console'],
+            'handlers': ['console', 'sentry'],
             'level': 'INFO',
             'propagate': True,
         },
 
         'django.db.backends': {
-            'handlers': ['console'],
+            'handlers': ['console', 'sentry'],
             'level': 'DEBUG',
             'propagate': True,
         },
@@ -328,6 +344,20 @@ LOGGING = {
         },
     }
 }
+
+# setting the log configuration explicitly ourselves using
+# the Python logging APIs:
+import logging.config
+logging.config.dictConfig(LOGGING)
+
+
+# Sentry config:
+if 'SENTRY_DSN' in environ:
+    RAVEN_CONFIG = {
+        'dsn': environ['SENTRY_DSN'],
+        'release': raven.fetch_git_sha(os.path.dirname(os.pardir)),
+        'CELERY_LOGLEVEL': logging.INFO
+    }
 
 ##############################################################################
 # Environment loading

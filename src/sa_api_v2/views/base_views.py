@@ -153,17 +153,6 @@ def is_really_logged_in(user, request):
             not is_origin_auth(auth))
 
 
-class IsLoggedInOwner(permissions.BasePermission):
-    def has_permission(self, request, view):
-        if not is_really_logged_in(request.user, request):
-            return False
-
-        if request.user.is_superuser or is_owner(request.user, request):
-            return True
-
-        return False
-
-
 class IsOwnerOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         """
@@ -180,6 +169,19 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
             or (hasattr(request, 'client') and
                 hasattr(request.client, 'owner') and
                 is_owner(request.client.owner, request))):
+            return True
+        return False
+
+
+class IsAdminOwnerOrReadOnly(permissions.BasePermission):
+    def has_permission(self, request, view):
+        """
+        Allows only superusers, owners (ie users named by
+        `request.allowed_username`), or logged in users, to write.
+        """
+        if IsOwnerOrReadOnly().has_permission(request, view):
+            return True
+        if is_really_logged_in(request.user, request):
             return True
         return False
 
@@ -249,9 +251,6 @@ class IsLoggedInAdmin(permissions.BasePermission):
 class IsAllowedByDataPermissions(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method == 'OPTIONS':
-            return True
-
-        if request.method in permissions.SAFE_METHODS:
             return True
 
         # Let the owner do whatever they want
@@ -565,7 +564,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     """
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     parser_classes = (JSONParser, FormParser, MultiPartParser)
-    permission_classes = (IsAllowedByDataPermissions, )
+    permission_classes = (IsAdminOwnerOrReadOnly, IsAllowedByDataPermissions)
     authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = (apikey.auth.ApiKeyAuthentication, cors.auth.OriginAuthentication)
     content_negotiation_class = ShareaboutsContentNegotiation
