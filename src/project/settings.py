@@ -101,7 +101,10 @@ ATTACHMENT_STORAGE = 'django.core.files.storage.FileSystemStorage'
 #
 REST_FRAMEWORK = {
     'PAGINATE_BY': 100,
-    'PAGINATE_BY_PARAM': 'page_size'
+    'PAGINATE_BY_PARAM': 'page_size',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'oauth2_provider.ext.rest_framework.OAuth2Authentication',
+    )
 }
 
 ###############################################################################
@@ -166,8 +169,10 @@ INSTALLED_APPS = (
     'djcelery',
 
     # OAuth
-    'provider',
-    'provider.oauth2',
+    # 'provider',
+    # 'provider.oauth2',
+    # testing switch to django-oauth-toolkit
+    'oauth2_provider',
     'corsheaders',
 
     # =================================
@@ -206,6 +211,7 @@ AUTHENTICATION_BACKENDS = (
     'sa_api_v2.auth_backends.CachedModelBackend',
 )
 
+OAUTH2_PROVIDER_APPLICATION_MODEL = 'oauth2_provider.Application'
 AUTH_USER_MODEL = 'sa_api_v2.User'
 SOCIAL_AUTH_USER_MODEL = 'sa_api_v2.User'
 SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email',]
@@ -226,11 +232,11 @@ SOCIAL_AUTH_LOGIN_ERROR_URL = 'remote-social-login-error'
 
 # Tests (nose)
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
-SOUTH_TESTS_MIGRATE = True
-SOUTH_MIGRATION_MODULES = {
-    'oauth2': 'ignore',
-    'djcelery': 'ignore',
-}
+TESTS_MIGRATE = True
+# MIGRATION_MODULES = {
+#     'oauth2': 'ignore',
+#     'djcelery': 'ignore',
+# }
 
 # Debug toolbar
 def custom_show_toolbar(request):
@@ -371,12 +377,12 @@ if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
     ATTACHMENT_STORAGE = DEFAULT_FILE_STORAGE
 
 if 'SHAREABOUTS_TWITTER_KEY' in environ \
-    and 'SHAREABOUTS_TWITTER_SECRET' in environ:
+        and 'SHAREABOUTS_TWITTER_SECRET' in environ:
     SOCIAL_AUTH_TWITTER_KEY = environ['SHAREABOUTS_TWITTER_KEY']
     SOCIAL_AUTH_TWITTER_SECRET = environ['SHAREABOUTS_TWITTER_SECRET']
 
 if 'SHAREABOUTS_FACEBOOK_KEY' in environ \
-    and 'SHAREABOUTS_FACEBOOK_SECRET' in environ:
+        and 'SHAREABOUTS_FACEBOOK_SECRET' in environ:
     SOCIAL_AUTH_FACEBOOK_KEY = environ['SHAREABOUTS_FACEBOOK_KEY']
     SOCIAL_AUTH_FACEBOOK_SECRET = environ['SHAREABOUTS_FACEBOOK_SECRET']
 

@@ -1,7 +1,8 @@
 import base64
 import logging
 from django.contrib.auth import get_user_model, SESSION_KEY, BACKEND_SESSION_KEY
-from provider.oauth2.models import Client
+# from provider.oauth2.models import Client
+from oauth2_provider.models import Application
 from remote_client_user.models import ClientPermissions
 from rest_framework.authentication import get_authorization_header
 
@@ -29,8 +30,10 @@ def get_authed_user(request):
 
     # Get the client
     try:
-        client = Client.objects.select_related('permissions').get(client_id=client_id, client_secret=client_secret)
-    except Client.DoesNotExist:
+#        client = Client.objects.select_related('permissions').get(client_id=client_id, client_secret=client_secret)
+        client = Application.objects.select_related('permissions').get(client_id=client_id, client_secret=client_secret)
+#    except Client.DoesNotExist:
+    except Application.DoesNotExist:
         return None
 
     # Get or create the user if the client allows
