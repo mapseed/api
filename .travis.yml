@@ -10,9 +10,10 @@ before_install:
   - docker pull kartoza/postgis:9.4-2.1
   - cd docker-shareabouts/backend && mv .env.template .env && ./letsdeploy.sh && cd -
   - mv src/template.env src/.env
+  - sudo apt-get install libgdal-dev python-gdal
 
 install:
-  - pip install -r requirements.txt
+  - pip install --upgrade pip && pip install -r requirements.txt
 
 script:
   - src/manage.py test
