@@ -124,7 +124,7 @@ Running the Shareabouts Web Application
 -----------------------------------------
 
 For local development, you will probably also want to install and run [the
-front-end mapping application](https://github.com/smartercleanup/duwamish/).
+front-end mapping application](https://github.com/mapseed/platform/).
 
 
 Deployment
