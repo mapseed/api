@@ -35,7 +35,7 @@ Create a development database for the Shareabouts data store.
 
     sudo su postgres
 
-For PostGIS 2.0:
+For PostGIS 2.0 and up:
 
     createdb shareabouts_v2
     psql -U postgres -d shareabouts_v2
