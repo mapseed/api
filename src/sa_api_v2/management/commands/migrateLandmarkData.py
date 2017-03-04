@@ -18,8 +18,8 @@ import logging
 log = logging.getLogger(__name__)
 
 json_filepathname = sys.argv[2]
-DATASET_SLUG = "restoration"
-DATASET_ID = "restoration"
+DATASET_SLUG = sys.argv[3]
+DATASET_ID = sys.argv[4]
 
 # Set to False to hide the metadata section of the place detail view.
 SHOW_METADATA = False
