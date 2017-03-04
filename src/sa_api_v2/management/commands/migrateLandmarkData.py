@@ -2,6 +2,7 @@ from __future__ import print_function
 from django.core.management.base import BaseCommand
 import sys
 import re
+import requests
 
 #from ... import models as sa_models
 #from ... import forms
@@ -17,9 +18,18 @@ import os
 import logging
 log = logging.getLogger(__name__)
 
-json_filepathname = sys.argv[2]
-DATASET_SLUG = sys.argv[3]
-DATASET_ID = sys.argv[4]
+data_source = sys.argv[2]
+DATASET_SLUG = "slug"
+DATASET_ID = "test_dataset"
+
+if (data_source == "restoration"):
+    DATASET_SLUG = "restoration"
+    DATASET_ID = "restortion"
+    json_data = requests.get('https://k7b7dyc4v3.execute-api.us-west-2.amazonaws.com/production/getLandmarks?http%3A%2F%2Fa.tiles.mapbox.com%2Fv4%2Fsmartercleanup.k9dcl2i9%2Ffeatures.json%3Faccess_token%3Dpk.eyJ1Ijoic21hcnRlcmNsZWFudXAiLCJhIjoiTnFhUWc2cyJ9.CqPJH-9yspIMudowQJx2Uw').json()
+elif (data_source == "vision"):
+    DATASET_SLUG = "vision"
+    DATASET_ID = "vision"
+    json_data = requests.get('https://k7b7dyc4v3.execute-api.us-west-2.amazonaws.com/production/getLandmarks?http%3A%2F%2Fa.tiles.mapbox.com%2Fv4%2Fsmartercleanup.mfigd1mf%2Ffeatures.json%3Faccess_token%3Dpk.eyJ1Ijoic21hcnRlcmNsZWFudXAiLCJhIjoiTnFhUWc2cyJ9.CqPJH-9yspIMudowQJx2Uw').json()
 
 # Set to False to hide the metadata section of the place detail view.
 SHOW_METADATA = False
@@ -73,8 +83,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         log.info('Command.handle: starting JSON import (log.info)')
         print('Command.handle: starting JSON import (print)')
-
-        json_data = json.load(open(json_filepathname))
+        
         for item in json_data["features"]:
             self.save_item(item)
 
