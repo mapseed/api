@@ -80,7 +80,7 @@ For older versions of ubuntu:
 Create a new virtual environment inside of the repository folder, and install
 the project requirements:
 
-    virtualenv env
+    virtualenv -p /usr/bin/python2.7 env
     source env/bin/activate
     pip install -r requirements.txt
 
