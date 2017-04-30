@@ -12,10 +12,12 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import (views, permissions, mixins, authentication,
                             generics, exceptions, status)
+from oauth2_provider.ext.rest_framework import authentication as oauth2Authentication
 from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.response import Response
-from rest_framework.renderers import JSONRenderer, JSONPRenderer, BrowsableAPIRenderer
+from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
+from rest_framework_jsonp.renderers import JSONPRenderer
 from rest_framework.request import Request
 from rest_framework.exceptions import APIException
 from rest_framework_bulk import generics as bulk_generics
@@ -63,7 +65,7 @@ class JSONPCallbackNegotiation (DefaultContentNegotiation):
     """
 
     def select_renderer(self, request, renderers, format_suffix=None):
-        if 'callback' in request.QUERY_PARAMS:
+        if 'callback' in request.query_params:
             format_suffix = 'jsonp'
         return super(JSONPCallbackNegotiation, self).select_renderer(request, renderers, format_suffix)
 
@@ -562,7 +564,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     parser_classes = (JSONParser, FormParser, MultiPartParser)
     permission_classes = (IsOwnerOrReadOnly, IsAllowedByDataPermissions)
-    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, oauth2Authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = (apikey.auth.ApiKeyAuthentication, cors.auth.OriginAuthentication)
     content_negotiation_class = ShareaboutsContentNegotiation
 
@@ -995,7 +997,12 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
 
     model = models.Place
     serializer_class = serializers.PlaceSerializer
-    pagination_serializer_class = serializers.FeatureCollectionSerializer
+    # TODO: 'pagination_serializer_class' is deprecated;
+    # using 'pagination_class' instead.
+    # But we'll need to fix other parts of our views and tests as needed.
+    # (see: http://www.django-rest-framework.org/topics/3.1-announcement/)
+    # pagination_serializer_class = serializers.FeatureCollectionSerializer
+    pagination_class = serializers.FeatureCollectionSerializer
     renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
 
@@ -1033,7 +1040,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         # If we're updating, limit the queryset to the items that are being
         # updated.
         if self.request.method.upper() == 'PUT':
-            data = self.request.DATA
+            data = self.request.data
             ids = [obj['id'] for obj in data if 'id' in obj]
             queryset = queryset.filter(pk__in=ids)
 
@@ -1057,17 +1064,14 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
 
         return queryset
 
-    def get_serializer(self, instance=None, data=None,
-                       files=None, many=False, partial=False):
+    def get_serializer(self, instance=None, data=None, many=False, partial=False):
         """
         Override GenericAPIView.get_serializer to pass in allow_add_remove
         """
         serializer_class = self.get_serializer_class()
         context = self.get_serializer_context()
         kwargs = {'allow_add_remove': True} if many else {}
-        return serializer_class(instance, data=data, files=files,
-                                many=many, partial=partial, context=context,
-                                **kwargs)
+        return serializer_class(instance, data=data, many=many, partial=partial, context=context, **kwargs)
 
     def trigger_webhooks(self, webhooks, obj):
         """
@@ -1243,7 +1247,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
         # If we're updating, limit the queryset to the items that are being
         # updated.
         if self.request.method.upper() == 'PUT':
-            data = self.request.DATA
+            data = self.request.data
             ids = [obj['id'] for obj in data if 'id' in obj]
             queryset = queryset.filter(pk__in=ids)
 
@@ -1257,17 +1261,14 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
                 'submitter')\
             .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups')
 
-    def get_serializer(self, instance=None, data=None,
-                       files=None, many=False, partial=False):
+    def get_serializer(self, instance=None, data=None, many=False, partial=False):
         """
         Override GenericAPIView.get_serializer to pass in allow_add_remove
         """
         serializer_class = self.get_serializer_class()
         context = self.get_serializer_context()
         kwargs = {'allow_add_remove': True} if many else {}
-        return serializer_class(instance, data=data, files=files,
-                                many=many, partial=partial, context=context,
-                                **kwargs)
+        return serializer_class(instance, data=data, many=many, partial=partial, context=context, **kwargs)
 
 
 class DataSetSubmissionListView (CachedResourceMixin, ProtectedOwnedResourceMixin, FilteredResourceMixin, generics.ListAPIView):
@@ -1370,7 +1371,7 @@ class DataSetInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpdateD
 
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
-    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, oauth2Authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
     always_allow_options = True
 
@@ -1417,7 +1418,7 @@ class DataSetMetadataView (ProtectedOwnedResourceMixin, generics.RetrieveAPIView
 
     model = models.DataSet
     serializer_class = serializers.SimpleDataSetSerializer
-    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, oauth2Authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
     permission_classes = (IsLoggedInOwner,)
     always_allow_options = True
@@ -1452,7 +1453,7 @@ class DataSetKeyListView (ProtectedOwnedResourceMixin, generics.ListAPIView):
 
     model = apikey.models.ApiKey
     serializer_class = serializers.ApiKeySerializer
-    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, oauth2Authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     permission_classes = (IsLoggedInOwner,)
     client_authentication_classes = ()
     always_allow_options = True
@@ -1471,7 +1472,7 @@ class DataSetListMixin (object):
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
     pagination_serializer_class = serializers.PaginatedResultsSerializer
-    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, oauth2Authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
     always_allow_options = True
 
@@ -1622,7 +1623,7 @@ class DataSetListView (DataSetListMixin, ProtectedOwnedResourceMixin, generics.L
         queryset = self.get_queryset()
 
         for field in ('slug', 'display_name'):
-            if field in request.DATA: overrides[field] = request.DATA[field]
+            if field in request.data: overrides[field] = request.data[field]
 
         # - - Make sure slug is unique.
         if 'slug' in overrides:
@@ -1782,7 +1783,7 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
 #
 
 class ClientAuthListView (OwnedResourceMixin, generics.ListCreateAPIView):
-    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, oauth2Authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
     permission_classes = (IsLoggedInOwner,)
 
@@ -1791,15 +1792,13 @@ class ClientAuthListView (OwnedResourceMixin, generics.ListCreateAPIView):
         dataset = self.get_dataset()
         return qs.filter(dataset=dataset)
 
-    def get_serializer(self, instance=None, data=None,
-                       files=None, many=False, partial=False):
+    def get_serializer(self, instance=None, data=None, many=False, partial=False):
         if isinstance(data, dict):
             dataset = self.get_dataset()
             data = data.copy()
             data['dataset'] = dataset.id
         return super(ClientAuthListView, self).get_serializer(
-            instance=instance, data=data, files=files, many=many,
-            partial=partial)
+            instance=instance, data=data, many=many, partial=partial)
 
 
 class ApiKeyListView (ClientAuthListView):
@@ -1853,14 +1852,14 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
         from django.contrib.auth import authenticate, login
 
         field_errors = {}
-        if 'username' not in request.DATA:
+        if 'username' not in request.data:
             field_errors['username'] = 'You must supply a "username" parameter.'
-        if 'password' not in request.DATA:
+        if 'password' not in request.data:
             field_errors['password'] = 'You must supply a "password" parameter.'
         if field_errors:
             return Response({'errors': field_errors}, status=400)
 
-        username, password = request.DATA['username'], request.DATA['password']
+        username, password = request.data['username'], request.data['password']
         user = authenticate(username=username, password=password)
 
         if user is None:

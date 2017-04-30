@@ -5,7 +5,8 @@ from rest_framework import views, permissions
 from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.response import Response
-from rest_framework.renderers import JSONRenderer, JSONPRenderer, BrowsableAPIRenderer
+from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
+from rest_framework_jsonp.renderers import JSONPRenderer
 from rest_framework.request import Request
 from rest_framework.exceptions import APIException
 from rest_framework.settings import APISettings
@@ -115,7 +116,7 @@ class DataSnapshotRequestListView (DataSnapshotMixin, OwnedResourceMixin, views.
         Get the parameters that should identify all snapshots formed off of
         this query.
         """
-        params = request.GET if request.method.upper() == 'GET' else request.DATA
+        params = request.GET if request.method.upper() == 'GET' else request.data
         return {
             'dataset': self.get_dataset(),
             'submission_set': submission_set_name,
