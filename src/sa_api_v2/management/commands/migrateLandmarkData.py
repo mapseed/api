@@ -24,7 +24,7 @@ DATASET_ID = "test_dataset"
 
 if (data_source == "restoration"):
     DATASET_SLUG = "restoration"
-    DATASET_ID = "restortion"
+    DATASET_ID = "restoration"
     json_data = requests.get('https://k7b7dyc4v3.execute-api.us-west-2.amazonaws.com/production/getLandmarks?http%3A%2F%2Fa.tiles.mapbox.com%2Fv4%2Fsmartercleanup.k9dcl2i9%2Ffeatures.json%3Faccess_token%3Dpk.eyJ1Ijoic21hcnRlcmNsZWFudXAiLCJhIjoiTnFhUWc2cyJ9.CqPJH-9yspIMudowQJx2Uw').json()
 elif (data_source == "vision"):
     DATASET_SLUG = "vision"
