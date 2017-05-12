@@ -45,6 +45,7 @@ import re
 import requests
 import ujson as json
 import logging
+import bleach
 
 logger = logging.getLogger('sa_api_v2.views')
 
@@ -791,6 +792,57 @@ class CachedResourceMixin (object):
         return response
 
 
+class Sanitizer(object):
+    """
+    Strip out non-whitelisted HTML tags and attributes in an object of submitted data.
+    """
+    def sanitize(self, obj):
+        field_whitelist = ['geometry']
+        tag_whitelist = [
+            'div', 'p', 'img', 'a', 'em', 'i', 'code', 'b', 's', 'u',
+            'li', 'ol', 'ul', 'strong', 'br', 'hr', 'span', 'h1', 
+            'h2', 'h3', 'h4', 'h5', 'h6'
+        ]
+        attribute_whitelist = {
+            '*': ['style'],
+            'img': ['src', 'alt', 'height', 'width'],
+            'a': ['href']
+        }
+        styles_whitelist = [
+            'color', 'background-color'
+        ]
+
+        for field_name, value in obj.iteritems():
+            if field_name not in field_whitelist:
+                if type(value) is list:
+                    for i in range(len(value)):
+                        value[i] = bleach.clean(
+                            value[i], 
+                            strip=True, 
+                            tags=tag_whitelist, 
+                            attributes=attribute_whitelist,
+                            styles=styles_whitelist
+                        )
+                    obj[field_name] = value
+                elif type(value) is dict:
+                    for k, v in value.iteritems():
+                        value[k] = bleach.clean(
+                            v, 
+                            strip=True, 
+                            tags=tag_whitelist, 
+                            attributes=attribute_whitelist,
+                            styles=styles_whitelist
+                        )
+                else:
+                    obj[field_name] = bleach.clean(
+                        value, 
+                        strip=True, 
+                        tags=tag_whitelist, 
+                        attributes=attribute_whitelist,
+                        styles=styles_whitelist
+                    )
+
+
 ###############################################################################
 #
 # Exceptions
@@ -928,7 +980,7 @@ class PlaceListMixin (object):
     pass
 
 
-class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, bulk_generics.ListCreateBulkUpdateAPIView):
+class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, bulk_generics.ListCreateBulkUpdateAPIView):
     """
 
     GET
@@ -1000,6 +1052,23 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
     pagination_serializer_class = serializers.FeatureCollectionSerializer
     renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
+
+    # Overriding create so we can sanitize submitted fields, which may
+    # contain raw HTML intended to be rendered in the client
+    def create(self, request, *args, **kwargs):
+        Sanitizer.sanitize(self, request.DATA)
+
+        serializer = self.get_serializer(data=request.DATA, files=request.FILES)
+
+        if serializer.is_valid():
+            self.pre_save(serializer.object)
+            self.object = serializer.save(force_insert=True)
+            self.post_save(self.object, created=True)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED,
+                            headers=headers)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get_cache_metakey(self):
         metakey_kwargs = self.kwargs.copy()
