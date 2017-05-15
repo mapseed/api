@@ -897,7 +897,7 @@ class ShareaboutsAPIRootView (views.APIView):
         return Response(response_data)
 
 
-class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.RetrieveUpdateDestroyAPIView):
+class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     """
     GET
     ---
@@ -944,6 +944,38 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
     serializer_class = serializers.PlaceSerializer
     renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
+
+    # Override update() here to support HTML sanitization
+    def update(self, request, *args, **kwargs):
+        Sanitizer.sanitize(self, request.DATA)
+
+        partial = kwargs.pop('partial', False)
+        self.object = self.get_object_or_none()
+
+        if self.object is None:
+            created = True
+            save_kwargs = {'force_insert': True}
+            success_status_code = status.HTTP_201_CREATED
+        else:
+            created = False
+            save_kwargs = {'force_update': True}
+            success_status_code = status.HTTP_200_OK
+
+        serializer = self.get_serializer(self.object, data=request.DATA,
+                                         files=request.FILES, partial=partial)
+
+        if serializer.is_valid():
+            try:
+                self.pre_save(serializer.object)
+            except ValidationError as err:
+                # full_clean on model instance may be called in pre_save, so we
+                # have to handle eventual errors.
+                return Response(err.message_dict, status=status.HTTP_400_BAD_REQUEST)
+            self.object = serializer.save(**save_kwargs)
+            self.post_save(self.object, created=created)
+            return Response(serializer.data, status=success_status_code)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get_object_or_404(self, pk):
         try:
