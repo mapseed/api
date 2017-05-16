@@ -801,15 +801,18 @@ class Sanitizer(object):
         tag_whitelist = [
             'div', 'p', 'img', 'a', 'em', 'i', 'code', 'b', 's', 'u',
             'li', 'ol', 'ul', 'strong', 'br', 'hr', 'span', 'h1', 
-            'h2', 'h3', 'h4', 'h5', 'h6'
+            'h2', 'h3', 'h4', 'h5', 'h6', 'iframe', 'html', 'head', 
+            'body', 'button'
         ]
         attribute_whitelist = {
             '*': ['style'],
             'img': ['src', 'alt', 'height', 'width'],
-            'a': ['href']
+            'a': ['href'],
+            'iframe': ['frameborder', 'allowfullscreen', 'src'],
+            'div': ['id']
         }
         styles_whitelist = [
-            'color', 'background-color'
+            'color', 'background-color', 'background-image'
         ]
 
         for field_name, value in obj.iteritems():
