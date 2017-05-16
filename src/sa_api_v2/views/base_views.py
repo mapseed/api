@@ -797,7 +797,7 @@ class Sanitizer(object):
     Strip out non-whitelisted HTML tags and attributes in an object of submitted data.
     """
     def sanitize(self, obj):
-        field_whitelist = ['geometry']
+        field_whitelist = ['geometry', 'showMetadata', 'published']
         tag_whitelist = [
             'div', 'p', 'img', 'a', 'em', 'i', 'code', 'b', 's', 'u',
             'li', 'ol', 'ul', 'strong', 'br', 'hr', 'span', 'h1', 
