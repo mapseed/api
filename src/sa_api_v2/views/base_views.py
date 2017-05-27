@@ -818,34 +818,35 @@ class Sanitizer(object):
         ]
 
         for field_name, value in obj.iteritems():
-            if field_name not in field_whitelist:
-                if type(value) is list:
-                    for i in range(len(value)):
-                        value[i] = bleach.clean(
-                            value[i], 
-                            strip=True, 
-                            tags=tag_whitelist, 
-                            attributes=attribute_whitelist,
-                            styles=styles_whitelist
-                        )
-                    obj[field_name] = value
-                elif type(value) is dict:
-                    for k, v in value.iteritems():
-                        value[k] = bleach.clean(
-                            v, 
-                            strip=True, 
-                            tags=tag_whitelist, 
-                            attributes=attribute_whitelist,
-                            styles=styles_whitelist
-                        )
-                else:
-                    obj[field_name] = bleach.clean(
-                        value, 
+            if field_name in field_whitelist:
+                return
+            if type(value) is list:
+                for i in range(len(value)):
+                    value[i] = bleach.clean(
+                        value[i], 
                         strip=True, 
                         tags=tag_whitelist, 
                         attributes=attribute_whitelist,
                         styles=styles_whitelist
                     )
+                obj[field_name] = value
+            elif type(value) is dict:
+                for k, v in value.iteritems():
+                    value[k] = bleach.clean(
+                        v, 
+                        strip=True, 
+                        tags=tag_whitelist, 
+                        attributes=attribute_whitelist,
+                        styles=styles_whitelist
+                    )
+            else:
+                obj[field_name] = bleach.clean(
+                    value, 
+                    strip=True, 
+                    tags=tag_whitelist, 
+                    attributes=attribute_whitelist,
+                    styles=styles_whitelist
+                )
 
 
 ###############################################################################
