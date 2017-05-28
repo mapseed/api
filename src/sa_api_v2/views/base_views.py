@@ -797,50 +797,56 @@ class Sanitizer(object):
     Strip out non-whitelisted HTML tags and attributes in an object of submitted data.
     """
     def sanitize(self, obj):
-        field_whitelist = ['geometry', 'showMetadata', 'published']
+        field_whitelist = [
+            'geometry', 'showMetadata', 'published', 'datasetSlug',
+            'datasetId', 'location_type', 'style', 'user_token', 'url-title']
         tag_whitelist = [
             'div', 'p', 'img', 'a', 'em', 'i', 'code', 'b', 's', 'u',
             'li', 'ol', 'ul', 'strong', 'br', 'hr', 'span', 'h1', 
-            'h2', 'h3', 'h4', 'h5', 'h6'
+            'h2', 'h3', 'h4', 'h5', 'h6', 'iframe', 'html', 'head', 
+            'body', 'button'
         ]
         attribute_whitelist = {
             '*': ['style'],
             'img': ['src', 'alt', 'height', 'width'],
-            'a': ['href']
+            'a': ['href'],
+            'iframe': ['frameborder', 'allowfullscreen', 'src'],
+            'div': ['id']
         }
         styles_whitelist = [
-            'color', 'background-color'
+            'color', 'background-color', 'background-image'
         ]
 
         for field_name, value in obj.iteritems():
-            if field_name not in field_whitelist:
-                if type(value) is list:
-                    for i in range(len(value)):
-                        value[i] = bleach.clean(
-                            value[i], 
-                            strip=True, 
-                            tags=tag_whitelist, 
-                            attributes=attribute_whitelist,
-                            styles=styles_whitelist
-                        )
-                    obj[field_name] = value
-                elif type(value) is dict:
-                    for k, v in value.iteritems():
-                        value[k] = bleach.clean(
-                            v, 
-                            strip=True, 
-                            tags=tag_whitelist, 
-                            attributes=attribute_whitelist,
-                            styles=styles_whitelist
-                        )
-                else:
-                    obj[field_name] = bleach.clean(
-                        value, 
+            if field_name in field_whitelist:
+                return
+            if type(value) is list:
+                for i in range(len(value)):
+                    value[i] = bleach.clean(
+                        value[i], 
                         strip=True, 
                         tags=tag_whitelist, 
                         attributes=attribute_whitelist,
                         styles=styles_whitelist
                     )
+                obj[field_name] = value
+            elif type(value) is dict:
+                for k, v in value.iteritems():
+                    value[k] = bleach.clean(
+                        v, 
+                        strip=True, 
+                        tags=tag_whitelist, 
+                        attributes=attribute_whitelist,
+                        styles=styles_whitelist
+                    )
+            else:
+                obj[field_name] = bleach.clean(
+                    value, 
+                    strip=True, 
+                    tags=tag_whitelist, 
+                    attributes=attribute_whitelist,
+                    styles=styles_whitelist
+                )
 
 
 ###############################################################################
