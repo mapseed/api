@@ -810,7 +810,7 @@ class Sanitizer(object):
             '*': ['style'],
             'img': ['src', 'alt', 'height', 'width'],
             'a': ['href'],
-            'iframe': ['frameborder', 'allowfullscreen', 'src'],
+            'iframe': ['frameborder', 'allowfullscreen', 'src', 'width', 'height'],
             'div': ['id']
         }
         styles_whitelist = [
