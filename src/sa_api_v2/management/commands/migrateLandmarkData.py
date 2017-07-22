@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 import sys
 import re
 import requests
+import string
 
 #from ... import models as sa_models
 #from ... import forms
@@ -44,8 +45,8 @@ DATA_BLOB_TARGET_OBJECTS = ["properties"]
 # data style names to the styles names expected by Leaflet.
 STYLE_PROPERTIES = {
     "marker-color": "marker-color",
-    "marker-symbol": "marker-symbol",
-    "marker-size": "marker-size",
+#   "marker-symbol": "marker-symbol",
+#   "marker-size": "marker-size",
     "stroke-width": "weight",
     "stroke-opacity": "opacity",
     "fill-opacity": "fillOpacity",
@@ -75,6 +76,121 @@ IGNORED_FIELDS = ["id", "Description", "Title"]
 IS_VISIBLE = True
 DEFAULT_USERNAME = "thebestguest"
 DEFAULT_EMAIL = ""
+
+ICON_URLS = {
+    "wetland": {
+        "a3e46b": [
+            "/static/css/images/markers/marker-land_comp.png",
+            "/static/css/images/markers/marker-comp-dot.png"
+        ],
+        "f1f075": [
+            "/static/css/images/markers/marker-land_prog.png",
+            "/static/css/images/markers/marker-prog-dot.png"
+        ],
+        "f86767": [
+            "/static/css/images/markers/marker-land_no-prog-or-dead.png",
+            "/static/css/images/markers/marker-no-prog-or-dead-dot.png"
+        ]
+    },
+    "park": {
+        "a3e46b": [
+            "/static/css/images/markers/marker-parks_comp.png",
+            "/static/css/images/markers/marker-comp-dot.png"
+        ],
+        "f1f075": [
+            "/static/css/images/markers/marker-parks_prog.png",
+            "/static/css/images/markers/marker-prog-dot.png"
+        ],
+        "f86767": [
+            "/static/css/images/markers/marker-parks_no-prog-or-dead.png",
+            "/static/css/images/markers/marker-no-prog-or-dead-dot.png"
+        ]
+    },
+    "school": {
+        "a3e46b": [
+            "/static/css/images/markers/marker-qual_comp.png",
+            "/static/css/images/markers/marker-comp-dot.png"
+        ],
+        "f1f075": [
+            "/static/css/images/markers/marker-qual_prog.png",
+            "/static/css/images/markers/marker-prog-dot.png"
+        ],
+        "f86767": [
+            "/static/css/images/markers/marker-qual_no-prog-or-dead.png",
+            "/static/css/images/markers/marker-no-prog-or-dead-dot.png"
+        ]
+    },
+    "police": {
+        "a3e46b": [
+            "/static/css/images/markers/marker-safe_comp.png",
+            "/static/css/images/markers/marker-comp-dot.png"
+        ],
+        "f1f075": [
+            "/static/css/images/markers/marker-safe_prog.png",
+            "/static/css/images/markers/marker-prog-dot.png"
+        ],
+        "f86767": [
+            "/static/css/images/markers/marker-safe_no-prog-or-dead.png",
+            "/static/css/images/markers/marker-no-prog-or-dead-dot.png"
+        ]
+    },
+    "rail": {
+        "a3e46b": [
+            "/static/css/images/markers/marker-transp_comp.png",
+            "/static/css/images/markers/marker-comp-dot.png"
+        ],
+        "f1f075": [
+            "/static/css/images/markers/marker-transp_prog.png",
+            "/static/css/images/markers/marker-prog-dot.png"
+        ],
+        "f86767": [
+            "/static/css/images/markers/marker-transp_no-prog-or-dead.png",
+            "/static/css/images/markers/marker-no-prog-or-dead-dot.png"
+        ]
+    },
+    "town-hall": {
+        "a3e46b": [
+            "/static/css/images/markers/marker-hist_comp.png",
+            "/static/css/images/markers/marker-comp-dot.png"
+        ],
+        "f1f075": [
+            "/static/css/images/markers/marker-hist_prog.png",
+            "/static/css/images/markers/marker-prog-dot.png"
+        ],
+        "f86767": [
+            "/static/css/images/markers/marker-hist_no-prog-or-dead.png",
+            "/static/css/images/markers/marker-no-prog-or-dead-dot.png"
+        ]
+    },
+    "danger": [
+        "/static/css/images/markers/marker-construction.png",
+        "/static/css/images/markers/marker-construction-dot.png"
+    ],
+    "park2": [
+        "/static/css/images/markers/marker-heart.png",
+        "/static/css/images/markers/marker-heart-dot.png"
+    ],
+    "industrial": [
+        "/static/css/images/markers/marker-industrial.png",
+        "/static/css/images/markers/marker-industrial-dot.png"
+    ],
+    "bicycle": [
+        "/static/css/images/markers/marker-bike.png",
+        "/static/css/images/markers/marker-bike-dot.png"
+    ],
+    "swimming": [
+        "/static/css/images/markers/marker-swimming.png",
+        "/static/css/images/markers/marker-swimming-dot.png"
+    ],
+    "theatre": [
+        "/static/css/images/markers/marker-art.png",
+        "/static/css/images/markers/marker-art-dot.png"
+    ],
+    "zoo": [
+        "/static/css/images/markers/marker-whale.png",
+        "/static/css/images/markers/marker-whale-dot.png"
+    ]
+}
 
 
 class Command(BaseCommand):
@@ -119,7 +235,7 @@ class Command(BaseCommand):
         }
         for target in DATA_BLOB_TARGET_OBJECTS:
             for key, value in item[target].items():
-                # apply strip patter
+                # apply strip pattern
                 if key == "description":
                     value = STRIP_PATTERN.sub("", value)
                 # skip ignored fields and style object fields
@@ -134,8 +250,47 @@ class Command(BaseCommand):
             if target not in IGNORED_FIELDS:
                 data[target[1]] = item[target[0]]   
 
-        data = json.dumps(data)
+        # add icon-url array
+        location_type = data["location_type"]
 
+        try:
+            marker_color = data["style"]["marker-color"].lstrip("#")
+        except:
+            pass
+
+        try:
+            data["style"]["icon-url"] = ICON_URLS[location_type]
+        except:
+            pass
+        
+        try:
+            data["style"]["icon-url"] = ICON_URLS[location_type][marker_color]
+        except:
+            pass
+
+        # capitalize title
+        data["title"] = string.capwords(data["title"])
+
+        # replace location_type
+        data["location_type"] = data_source
+
+        # remove unneeded style parameters
+        try: 
+            del data["marker-size"]
+        except:
+            pass
+
+        try:
+            del data["marker-symbol"]
+        except:
+            pass
+
+        try: 
+            del data["style"]["marker-color"]
+        except:
+            pass
+
+        data = json.dumps(data)
 
         placeForm = forms.PlaceForm({
             "data": data,
