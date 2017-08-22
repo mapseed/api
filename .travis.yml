@@ -33,5 +33,7 @@ notifications:
 # If we want unit tests to run on forks, we can always publish that key publicly,
 # it wouldn't be a big deal to make the bucket publicly accessible.
 env:
+  global:
+    - BOTO_CONFIG=/tmp/nowhere
   matrix:
     secure: JwNeeUDYssAHrjhpXgU9TG6IP/OSBnttEw/CmtVuLYytuB3CdhKgN5fd9cq6+tQMqee/lJo4nTyxWddJs9rXbr0vA1SWFYEIaHAE5n5+cNZ12VUIEFD4Y3ymHKWHYvY3xu4UBoTC29WEfeeyyXknJTMWzNrL0NbQC1RTAdLY/DgX/POvOFzzQjmRAops+hx8/65d5q96h/8ubw85JFAOEJHkZNdpgNc2dDCpUZSiT7uCaMcQ/N3KPSz5ddpGzEFJglXqLCagvaMWIAM/Rln7XhlQ3DiF+PZOszju3t9j+Ac/hqQago270jmeF0hNWk2npOeFN6eor1L2sC0yaWwGT/fo+GIv+TEZhHExL63kTMie7Lj96Hsp6RebdkE0v3T4mO31ZRnd0j0BM5zbSUKqiaAaqxTiPQSJYANjgqXgbF4r00ffz4NLvgMEYYbRFtbZXyIR0JxEUZYJ5CR7QBjHwptmhGJux/Gjf1Cw2icGUMrC51ypi60rjp3bZSi6zk58Ky3hhwn1IP0436rMZeeShVRwVHjNc4MCup7chRiOMLY0w8jGLRSKfek53Cr7JINM+lRK26h4gxos9M7W2Wo6Q/6JtgVN5v6E6C6/GnZfwBymN0LEHb3lhZSooaIlc6eMxVdmRVwQhzjvDxSGSxanNC6Bc0QaLd1H90XcsHTTgjI=
