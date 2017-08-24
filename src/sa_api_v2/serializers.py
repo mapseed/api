@@ -379,6 +379,18 @@ class FacebookUserDataStrategy (object):
         return user_info['bio']
 
 
+class GoogleUserDataStrategy (object):
+    def extract_avatar_url(self, user_info):
+       url = user_info['image']['url']
+       return url
+
+    def extract_full_name(self, user_info):
+        name = user_info['name']['givenName'] + ' ' + user_info['name']['familyName']
+        return name
+
+    def extract_bio(self, user_info):
+        return user_info["aboutMe"]
+
 class ShareaboutsUserDataStrategy (object):
     """
     This strategy exists so that we can add avatars and full names to users
@@ -502,6 +514,7 @@ class BaseUserSerializer (serializers.ModelSerializer):
     strategies = {
         'twitter': TwitterUserDataStrategy(),
         'facebook': FacebookUserDataStrategy(),
+        'google-oauth2': GoogleUserDataStrategy(),
         'shareabouts': ShareaboutsUserDataStrategy()
     }
     default_strategy = DefaultUserDataStrategy()

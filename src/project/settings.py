@@ -206,6 +206,7 @@ AUTHENTICATION_BACKENDS = (
     # for list of available backends.
     'social.backends.twitter.TwitterOAuth',
     'social.backends.facebook.FacebookOAuth2',
+    'social.backends.google.GoogleOAuth2',
     'sa_api_v2.auth_backends.CachedModelBackend',
 )
 
@@ -215,6 +216,7 @@ SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email',]
 
 SOCIAL_AUTH_FACEBOOK_EXTRA_DATA = ['name', 'picture', 'bio']
 SOCIAL_AUTH_TWITTER_EXTRA_DATA = ['name', 'description', 'profile_image_url']
+SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['name', 'image', 'aboutMe']
 
 # Explicitly request the following extra things from facebook
 SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {'fields': 'id,name,picture.width(96).height(96),first_name,last_name,bio'}
