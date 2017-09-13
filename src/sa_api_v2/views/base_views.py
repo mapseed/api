@@ -7,7 +7,9 @@ from django.db.models import Count, Q
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.test.client import RequestFactory
+from django.core.mail import EmailMultiAlternatives
 from django.test.utils import override_settings
+from django.template import RequestContext, Template
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import (views, permissions, mixins, authentication,
@@ -802,8 +804,8 @@ class Sanitizer(object):
             'datasetId', 'location_type', 'style', 'user_token', 'url-title']
         tag_whitelist = [
             'div', 'p', 'img', 'a', 'em', 'i', 'code', 'b', 's', 'u',
-            'li', 'ol', 'ul', 'strong', 'br', 'hr', 'span', 'h1', 
-            'h2', 'h3', 'h4', 'h5', 'h6', 'iframe', 'html', 'head', 
+            'li', 'ol', 'ul', 'strong', 'br', 'hr', 'span', 'h1',
+            'h2', 'h3', 'h4', 'h5', 'h6', 'iframe', 'html', 'head',
             'body', 'button'
         ]
         attribute_whitelist = {
@@ -823,9 +825,9 @@ class Sanitizer(object):
             if type(value) is list:
                 for i in range(len(value)):
                     value[i] = bleach.clean(
-                        value[i], 
-                        strip=True, 
-                        tags=tag_whitelist, 
+                        value[i],
+                        strip=True,
+                        tags=tag_whitelist,
                         attributes=attribute_whitelist,
                         styles=styles_whitelist
                     )
@@ -833,17 +835,17 @@ class Sanitizer(object):
             elif type(value) is dict:
                 for k, v in value.iteritems():
                     value[k] = bleach.clean(
-                        v, 
-                        strip=True, 
-                        tags=tag_whitelist, 
+                        v,
+                        strip=True,
+                        tags=tag_whitelist,
                         attributes=attribute_whitelist,
                         styles=styles_whitelist
                     )
             else:
                 obj[field_name] = bleach.clean(
-                    value, 
-                    strip=True, 
-                    tags=tag_whitelist, 
+                    value,
+                    strip=True,
+                    tags=tag_whitelist,
                     attributes=attribute_whitelist,
                     styles=styles_whitelist
                 )
@@ -1130,6 +1132,12 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
         if len(webhooks):
             self.trigger_webhooks(webhooks, obj)
 
+        origin = self.request.META.get('HTTP_ORIGIN', '')
+        emails = obj.dataset.place_emails.filter(submission_set='places').filter(event='add')
+
+        if len(emails):
+            self.trigger_emails(emails, obj, origin)
+
     def get_queryset(self):
         dataset = self.get_dataset()
         queryset = super(PlaceListView, self).get_queryset()
@@ -1208,6 +1216,106 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                     obj.id, webhook.url, status_code)
                 logger.error(e)
 
+    def trigger_emails(self, emails, obj, origin):
+        """
+        Sends emails based on the origin.
+        """
+        logger.warn('[EMAIL] Looping emails')
+        for email in emails:
+            logger.warn('[EMAIL] Checking origin match')
+            logger.warn('origin is')
+            logger.warn(origin)
+            logger.warn('email.origin is')
+            logger.warn(email.origin)
+            if True: # cors.models.Origin.match(email.origin, origin):
+                logger.warn('[EMAIL] Starting email send')
+
+                from_email = email.from_email
+
+                logger.warn('[EMAIL] Got from email')
+
+                errors = []
+
+                try:
+                    email_field = email.recipient_email_field
+                    logger.warn('[EMAIL] request.DATA')
+                    logger.warn(self.request.DATA)
+                    recipient_email = self.request.DATA[email_field]
+                    logger.warn('[EMAIL] recipient_email')
+                    logger.warn(recipient_email)
+                except KeyError:
+                    errors.append("No '%s' field found on the place. "
+                                  "Be sure to configure the 'notifications.submitter_"
+                                  "email_field' property if necessary." % (email_field,))
+
+                logger.warn('[EMAIL] Got to email')
+
+                # Bail if any errors were found. Send all errors to the logs and otherwise
+                # fail silently.
+                if errors:
+                    for error_msg in errors:
+                        logger.error(error_msg)
+                    return
+
+                logger.warn('[EMAIL] Going ahead, no errors')
+
+                # If the user didn't provide an email address, then no need to go further.
+                if not recipient_email:
+                    return
+
+                logger.warn('[EMAIL] Going ahead, recipient exists')
+
+                # Set optional values
+                bcc_list = [email.bcc_email]
+
+                logger.warn('[EMAIL] Got bcc email')
+
+                # If we didn't find any errors, then render the email and send.
+                context_data = RequestContext(self.request, {
+                    'place': obj,
+                    'email': recipient_email
+                })
+
+                logger.warn('[EMAIL] Got context data')
+
+                subject = Template(email.subject).render(context_data)
+                body = Template(email.body_text).render(context_data)
+
+                logger.warn('[EMAIL] Rendered text')
+
+                if email.body_html:
+                    html_body = Template(email.body_html).render(context_data)
+                    logger.warn('[EMAIL] Rendered html')
+                else:
+                    html_body = None
+
+                # connection = smtp.EmailBackend(
+                #     host=...,
+                #     port=...,
+                #     username=...,
+                #     use_tls=...)
+
+                # NOTE: In Django 1.7+, send_mail can handle multi-part email with the
+                # html_message parameter, but pre 1.7 cannot and we must construct the
+                # multipart message manually.
+                msg = EmailMultiAlternatives(
+                    subject,
+                    body,
+                    from_email,
+                    to=[recipient_email],
+                    bcc=bcc_list)
+                # connection=connection)
+
+                logger.warn('[EMAIL] Created email')
+
+                if html_body:
+                    msg.attach_alternative(html_body, 'text/html')
+                    logger.warn('[EMAIL] Attached html')
+
+                msg.send()
+                logger.warn('[EMAIL] Sent!')
+                logger.info('[EMAIL] Email for place %d sent.', obj.id)
+                break
 
 class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     """

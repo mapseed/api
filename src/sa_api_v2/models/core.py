@@ -191,6 +191,33 @@ class Webhook (TimeStampedModel):
     def __unicode__(self):
         return 'On %s data in %s' % (self.event, self.submission_set)
 
+class PlaceEmail (TimeStampedModel):
+    """
+    A Place Email is a user-defined email to be sent to the submitter of
+    a place.
+    """
+    EVENT_CHOICES = (
+        ('add', 'On add'),
+    )
+
+    dataset = models.ForeignKey('DataSet', related_name='place_emails')
+    submission_set = models.CharField(max_length=128)
+    event = models.CharField(max_length=128, choices=EVENT_CHOICES, default='add')
+    origin = models.CharField(max_length=100)
+    recipient_email_field = models.CharField(max_length=128)
+    from_email = models.EmailField()
+    bcc_email = models.EmailField()
+    subject = models.CharField(max_length=512)
+    body_text = models.TextField()
+    body_html = models.TextField()
+
+    class Meta:
+        app_label = 'sa_api_v2'
+        db_table = 'sa_api_place_email'
+
+    def __unicode__(self):
+        return 'On %s data in %s' % (self.event, self.submission_set)
+
 
 class GeoSubmittedThingQuerySet (query.GeoQuerySet, SubmittedThingQuerySet):
     pass
