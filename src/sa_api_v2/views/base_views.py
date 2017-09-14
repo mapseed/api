@@ -1227,7 +1227,7 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
             logger.warn(origin)
             logger.warn('email.origin is')
             logger.warn(email.origin)
-            if True: # cors.models.Origin.match(email.origin, origin):
+            if cors.models.Origin.match(email.origin, origin):
                 logger.warn('[EMAIL] Starting email send')
 
                 from_email = email.from_email
