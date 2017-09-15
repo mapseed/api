@@ -200,10 +200,8 @@ class PlaceEmailTemplate (TimeStampedModel):
         ('add', 'On add'),
     )
 
-    dataset = models.ForeignKey('DataSet', related_name='place_email_templates')
     submission_set = models.CharField(max_length=128)
     event = models.CharField(max_length=128, choices=EVENT_CHOICES, default='add')
-    origin = models.CharField(max_length=100)
     recipient_email_field = models.CharField(max_length=128)
     from_email = models.EmailField()
     bcc_email = models.EmailField()

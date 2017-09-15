@@ -1133,10 +1133,15 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
             self.trigger_webhooks(webhooks, obj)
 
         origin = self.request.META.get('HTTP_ORIGIN', '')
-        emails = obj.dataset.place_emails.filter(submission_set='places').filter(event='add')
+        email_templates = o.place_email_template for o in obj.dataset.origins\
+         if Origin.match(o.pattern, origin) and o.place_email_template not None
 
-        if len(emails):
-            self.trigger_emails(emails, obj, origin)
+        email_templates = email_templates
+            .filter(submission_set='places')
+            .filter(event='add')
+
+        if len(email_templates):
+            self.trigger_emails(email_templates, obj, origin)
 
     def get_queryset(self):
         dataset = self.get_dataset()
@@ -1216,106 +1221,99 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                     obj.id, webhook.url, status_code)
                 logger.error(e)
 
-    def trigger_emails(self, emails, obj, origin):
+    def trigger_emails(self, email_templates, obj, origin):
         """
         Sends emails based on the origin.
         """
-        logger.warn('[EMAIL] Looping emails')
-        for email in emails:
-            logger.warn('[EMAIL] Checking origin match')
-            logger.warn('origin is')
-            logger.warn(origin)
-            logger.warn('email.origin is')
-            logger.warn(email.origin)
-            if cors.models.Origin.match(email.origin, origin):
-                logger.warn('[EMAIL] Starting email send')
+        for email_template in email_templates:
+            logger.warn('[EMAIL] Starting email send')
 
-                from_email = email.from_email
+            from_email = email_template.from_email
 
-                logger.warn('[EMAIL] Got from email')
+            logger.warn('[EMAIL] Got from email')
 
-                errors = []
+            errors = []
 
-                try:
-                    email_field = email.recipient_email_field
-                    logger.warn('[EMAIL] request.DATA')
-                    logger.warn(self.request.DATA)
-                    recipient_email = self.request.DATA[email_field]
-                    logger.warn('[EMAIL] recipient_email')
-                    logger.warn(recipient_email)
-                except KeyError:
-                    errors.append("No '%s' field found on the place. "
-                                  "Be sure to configure the 'notifications.submitter_"
-                                  "email_field' property if necessary." % (email_field,))
+            try:
+                email_field = email_template.recipient_email_field
+                logger.warn('[EMAIL] request.DATA')
+                logger.warn(self.request.DATA)
+                recipient_email = self.request.DATA[email_field]
+                logger.warn('[EMAIL] recipient_email')
+                logger.warn(recipient_email)
+            except KeyError:
+                errors.append("No '%s' field found on the place. "
+                              "Be sure to configure the 'notifications.submitter_"
+                              "email_field' property if necessary." % (email_field,))
 
-                logger.warn('[EMAIL] Got to email')
+            logger.warn('[EMAIL] Got to email')
 
-                # Bail if any errors were found. Send all errors to the logs and otherwise
-                # fail silently.
-                if errors:
-                    for error_msg in errors:
-                        logger.error(error_msg)
-                    return
+            # Bail if any errors were found. Send all errors to the logs and otherwise
+            # fail silently.
+            if errors:
+                for error_msg in errors:
+                    logger.error(error_msg)
+                return
 
-                logger.warn('[EMAIL] Going ahead, no errors')
+            logger.warn('[EMAIL] Going ahead, no errors')
 
-                # If the user didn't provide an email address, then no need to go further.
-                if not recipient_email:
-                    return
+            # If the user didn't provide an email address, then no need to go further.
+            if not recipient_email:
+                return
 
-                logger.warn('[EMAIL] Going ahead, recipient exists')
+            logger.warn('[EMAIL] Going ahead, recipient exists')
 
-                # Set optional values
-                bcc_list = [email.bcc_email]
+            # Set optional values
+            bcc_list = [email_template.bcc_email]
 
-                logger.warn('[EMAIL] Got bcc email')
+            logger.warn('[EMAIL] Got bcc email')
 
-                # If we didn't find any errors, then render the email and send.
-                context_data = RequestContext(self.request, {
-                    'place': obj,
-                    'email': recipient_email
-                })
+            # If we didn't find any errors, then render the email and send.
+            context_data = RequestContext(self.request, {
+                'place': obj,
+                'email': recipient_email
+            })
 
-                logger.warn('[EMAIL] Got context data')
+            logger.warn('[EMAIL] Got context data')
 
-                subject = Template(email.subject).render(context_data)
-                body = Template(email.body_text).render(context_data)
+            subject = Template(email_template.subject).render(context_data)
+            body = Template(email_template.body_text).render(context_data)
 
-                logger.warn('[EMAIL] Rendered text')
+            logger.warn('[EMAIL] Rendered text')
 
-                if email.body_html:
-                    html_body = Template(email.body_html).render(context_data)
-                    logger.warn('[EMAIL] Rendered html')
-                else:
-                    html_body = None
+            if email_template.body_html:
+                html_body = Template(email_template.body_html).render(context_data)
+                logger.warn('[EMAIL] Rendered html')
+            else:
+                html_body = None
 
-                # connection = smtp.EmailBackend(
-                #     host=...,
-                #     port=...,
-                #     username=...,
-                #     use_tls=...)
+            # connection = smtp.EmailBackend(
+            #     host=...,
+            #     port=...,
+            #     username=...,
+            #     use_tls=...)
 
-                # NOTE: In Django 1.7+, send_mail can handle multi-part email with the
-                # html_message parameter, but pre 1.7 cannot and we must construct the
-                # multipart message manually.
-                msg = EmailMultiAlternatives(
-                    subject,
-                    body,
-                    from_email,
-                    to=[recipient_email],
-                    bcc=bcc_list)
-                # connection=connection)
+            # NOTE: In Django 1.7+, send_mail can handle multi-part email with the
+            # html_message parameter, but pre 1.7 cannot and we must construct the
+            # multipart message manually.
+            msg = EmailMultiAlternatives(
+                subject,
+                body,
+                from_email,
+                to=[recipient_email],
+                bcc=bcc_list)
+            # connection=connection)
 
-                logger.warn('[EMAIL] Created email')
+            logger.warn('[EMAIL] Created email')
 
-                if html_body:
-                    msg.attach_alternative(html_body, 'text/html')
-                    logger.warn('[EMAIL] Attached html')
+            if html_body:
+                msg.attach_alternative(html_body, 'text/html')
+                logger.warn('[EMAIL] Attached html')
 
-                msg.send()
-                logger.warn('[EMAIL] Sent!')
-                logger.info('[EMAIL] Email for place %d sent.', obj.id)
-                break
+            msg.send()
+            logger.warn('[EMAIL] Sent!')
+            logger.info('[EMAIL] Email for place %d sent.', obj.id)
+            break
 
 class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     """

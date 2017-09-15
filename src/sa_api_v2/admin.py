@@ -202,10 +202,6 @@ class InlineWebhookAdmin(admin.StackedInline):
     model = models.Webhook
     extra = 0
 
-class InlinePlaceEmailTemplateAdmin(admin.StackedInline):
-    model = models.PlaceEmailTemplate
-    extra = 0
-
 
 class WebhookAdmin(admin.ModelAdmin):
     list_display = ('id', 'dataset', 'submission_set', 'event', 'url',)
@@ -220,8 +216,7 @@ class WebhookAdmin(admin.ModelAdmin):
         return qs
 
 class PlaceEmailTemplateAdmin(admin.ModelAdmin):
-    list_display = ('id', 'dataset', 'submission_set', 'event', 'origin', 'subject', 'body_text', 'body_html',)
-    raw_id_fields = ('dataset',)
+    list_display = ('id', 'submission_set', 'event', 'subject', 'body_text', 'body_html',)
     # list_filter = ('name',)
 
     def get_queryset(self, request):
@@ -239,7 +234,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
     objectactions = ('clone_dataset', 'clear_cache')
     raw_id_fields = ('owner',)
     readonly_fields = ('api_path',)
-    inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin, InlineWebhookAdmin, InlinePlaceEmailTemplateAdmin]
+    inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin, InlineWebhookAdmin]
 
     def clear_cache(self, request, obj):
         obj.clear_instance_cache()
