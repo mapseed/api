@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='PlaceEmail',
+            name='PlaceEmailTemplate',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('created_datetime', models.DateTimeField(default=django.utils.timezone.now, db_index=True, blank=True)),
@@ -27,10 +27,10 @@ class Migration(migrations.Migration):
                 ('subject', models.CharField(max_length=512)),
                 ('body_text', models.TextField()),
                 ('body_html', models.TextField()),
-                ('dataset', models.ForeignKey(related_name='place_emails', to='sa_api_v2.DataSet')),
+                ('dataset', models.ForeignKey(related_name='place_email_templates', to='sa_api_v2.DataSet')),
             ],
             options={
-                'db_table': 'sa_api_place_email',
+                'db_table': 'sa_api_place_email_templates',
             },
             bases=(models.Model,),
         ),

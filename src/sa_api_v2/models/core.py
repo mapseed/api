@@ -191,7 +191,7 @@ class Webhook (TimeStampedModel):
     def __unicode__(self):
         return 'On %s data in %s' % (self.event, self.submission_set)
 
-class PlaceEmail (TimeStampedModel):
+class PlaceEmailTemplate (TimeStampedModel):
     """
     A Place Email is a user-defined email to be sent to the submitter of
     a place.
@@ -200,7 +200,7 @@ class PlaceEmail (TimeStampedModel):
         ('add', 'On add'),
     )
 
-    dataset = models.ForeignKey('DataSet', related_name='place_emails')
+    dataset = models.ForeignKey('DataSet', related_name='place_email_templates')
     submission_set = models.CharField(max_length=128)
     event = models.CharField(max_length=128, choices=EVENT_CHOICES, default='add')
     origin = models.CharField(max_length=100)
@@ -213,7 +213,7 @@ class PlaceEmail (TimeStampedModel):
 
     class Meta:
         app_label = 'sa_api_v2'
-        db_table = 'sa_api_place_email'
+        db_table = 'sa_api_place_email_templates'
 
     def __unicode__(self):
         return 'On %s data in %s' % (self.event, self.submission_set)

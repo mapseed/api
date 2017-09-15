@@ -202,8 +202,8 @@ class InlineWebhookAdmin(admin.StackedInline):
     model = models.Webhook
     extra = 0
 
-class InlinePlaceEmailAdmin(admin.StackedInline):
-    model = models.PlaceEmail
+class InlinePlaceEmailTemplateAdmin(admin.StackedInline):
+    model = models.PlaceEmailTemplate
     extra = 0
 
 
@@ -219,13 +219,13 @@ class WebhookAdmin(admin.ModelAdmin):
             qs = qs.filter(dataset__owner=user)
         return qs
 
-class PlaceEmailAdmin(admin.ModelAdmin):
+class PlaceEmailTemplateAdmin(admin.ModelAdmin):
     list_display = ('id', 'dataset', 'submission_set', 'event', 'origin', 'subject', 'body_text', 'body_html',)
     raw_id_fields = ('dataset',)
     # list_filter = ('name',)
 
     def get_queryset(self, request):
-        qs = super(PlaceEmailAdmin, self).get_queryset(request)
+        qs = super(PlaceEmailTemplateAdmin, self).get_queryset(request)
         user = request.user
         if not user.is_superuser:
             qs = qs.filter(dataset__owner=user)
@@ -239,7 +239,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
     objectactions = ('clone_dataset', 'clear_cache')
     raw_id_fields = ('owner',)
     readonly_fields = ('api_path',)
-    inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin, InlineWebhookAdmin, InlinePlaceEmailAdmin]
+    inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin, InlineWebhookAdmin, InlinePlaceEmailTemplateAdmin]
 
     def clear_cache(self, request, obj):
         obj.clear_instance_cache()
@@ -410,7 +410,7 @@ admin.site.register(models.Submission, SubmissionAdmin)
 admin.site.register(models.Action, ActionAdmin)
 admin.site.register(models.Group, GroupAdmin)
 admin.site.register(models.Webhook, WebhookAdmin)
-admin.site.register(models.PlaceEmail, PlaceEmailAdmin)
+admin.site.register(models.PlaceEmailTemplate, PlaceEmailTemplateAdmin)
 
 admin.site.site_header = 'Shareabouts API Server Administration'
 admin.site.site_title = 'Shareabouts API Server'
