@@ -144,7 +144,7 @@ class InlineApiKeyAdmin(admin.StackedInline):
 
 class InlineOriginAdmin(admin.StackedInline):
     model = Origin
-    # raw_id_fields = ['origin']
+    raw_id_fields = ['place_email_template']
     extra = 0
     readonly_fields = ('edit_url',)
 
