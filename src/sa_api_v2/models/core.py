@@ -204,10 +204,10 @@ class PlaceEmailTemplate (TimeStampedModel):
     event = models.CharField(max_length=128, choices=EVENT_CHOICES, default='add')
     recipient_email_field = models.CharField(max_length=128)
     from_email = models.EmailField()
-    bcc_email = models.EmailField()
+    bcc_email = models.EmailField(blank=True, default=None)
     subject = models.CharField(max_length=512)
     body_text = models.TextField()
-    body_html = models.TextField()
+    body_html = models.TextField(blank=True, default=None)
 
     class Meta:
         app_label = 'sa_api_v2'
