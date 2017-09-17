@@ -23,7 +23,7 @@ class Origin(CloneableModelMixin, models.Model):
     logged_ip = models.IPAddressField(blank=True, null=True)
     last_used = models.DateTimeField(blank=True, default=now)
     dataset = models.ForeignKey(DataSet, blank=True, related_name='origins')
-    place_email_template = models.ForeignKey(PlaceEmailTemplate, blank=True, default=None, related_name='origins')
+    place_email_template = models.ForeignKey(PlaceEmailTemplate, null=True, default=None, related_name='origins')
 
     class Meta:
         db_table = 'cors_origin'

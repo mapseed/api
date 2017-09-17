@@ -22,10 +22,10 @@ class Migration(migrations.Migration):
                 ('event', models.CharField(default=b'add', max_length=128, choices=[(b'add', b'On add')])),
                 ('recipient_email_field', models.CharField(max_length=128)),
                 ('from_email', models.EmailField(max_length=75)),
-                ('bcc_email', models.EmailField(max_length=75)),
+                ('bcc_email', models.EmailField(default=None, max_length=75, blank=True)),
                 ('subject', models.CharField(max_length=512)),
                 ('body_text', models.TextField()),
-                ('body_html', models.TextField()),
+                ('body_html', models.TextField(default=None, blank=True)),
             ],
             options={
                 'db_table': 'sa_api_place_email_templates',
@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='origin',
             name='place_email_template',
-            field=models.ForeignKey(related_name='origins', default=None, blank=True, to='sa_api_v2.PlaceEmailTemplate'),
+            field=models.ForeignKey(related_name='origins', default=None, to='sa_api_v2.PlaceEmailTemplate', null=True),
             preserve_default=True,
         ),
     ]
