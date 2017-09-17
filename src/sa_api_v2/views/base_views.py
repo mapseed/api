@@ -1133,12 +1133,14 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
             self.trigger_webhooks(webhooks, obj)
 
         origin = self.request.META.get('HTTP_ORIGIN', '')
-        email_templates = o.place_email_template for o in obj.dataset.origins\
-         if Origin.match(o.pattern, origin) and o.place_email_template not None
+        email_templates = [o.place_email_template for o in obj.dataset.origins.all()
+                           if cors.models.Origin.match(o.pattern, origin) and
+                              o.place_email_template is not None]
 
-        email_templates = email_templates
-            .filter(submission_set='places')
-            .filter(event='add')
+        email_templates = filter(
+            lambda et: et.submission_set == 'places' and et.event == 'add',
+            email_templates
+        )
 
         if len(email_templates):
             self.trigger_emails(email_templates, obj, origin)
