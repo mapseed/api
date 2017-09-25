@@ -133,7 +133,6 @@ class Command(BaseCommand):
                 data[target[1]] = item["properties"][target[0]]   
 
         data["url-title"] = data["title"].lower().replace(" ", "-")
-        del data["title"]
 
         data = json.dumps(data)
 
