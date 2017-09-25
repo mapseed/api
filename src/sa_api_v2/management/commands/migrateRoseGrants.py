@@ -132,7 +132,9 @@ class Command(BaseCommand):
             if target not in IGNORED_FIELDS:
                 data[target[1]] = item["properties"][target[0]]   
 
-        data["url-title"] = data["title"].lower().replace(" ", "-")
+        data["url-title"] = data["title"].lower()
+        data["url-title"] = re.sub('[^A-Za-z0-9]', '-', data["url-title"])
+        data["url-title"] = data["url-title"].rstrip("-")
 
         data = json.dumps(data)
 
