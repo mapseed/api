@@ -1228,27 +1228,24 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
         Sends emails based on the origin.
         """
         for email_template in email_templates:
-            logger.warn('[EMAIL] Starting email send')
+            logger.info('[EMAIL] Starting email send')
 
             from_email = email_template.from_email
 
-            logger.warn('[EMAIL] Got from email')
+            logger.debug('[EMAIL] Got from email')
 
             errors = []
 
             try:
                 email_field = email_template.recipient_email_field
-                logger.warn('[EMAIL] request.DATA')
-                logger.warn(self.request.DATA)
                 recipient_email = self.request.DATA[email_field]
-                logger.warn('[EMAIL] recipient_email')
-                logger.warn(recipient_email)
+                logger.debug('[EMAIL] recipient_email: ' + recipient_email)
             except KeyError:
                 errors.append("No '%s' field found on the place. "
                               "Be sure to configure the 'notifications.submitter_"
                               "email_field' property if necessary." % (email_field,))
 
-            logger.warn('[EMAIL] Got to email')
+            logger.debug('[EMAIL] Got to email')
 
             # Bail if any errors were found. Send all errors to the logs and otherwise
             # fail silently.
@@ -1257,18 +1254,18 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                     logger.error(error_msg)
                 return
 
-            logger.warn('[EMAIL] Going ahead, no errors')
+            logger.debug('[EMAIL] Going ahead, no errors')
 
             # If the user didn't provide an email address, then no need to go further.
             if not recipient_email:
                 return
 
-            logger.warn('[EMAIL] Going ahead, recipient exists')
+            logger.debug('[EMAIL] Going ahead, recipient exists')
 
             # Set optional values
             bcc_list = [email_template.bcc_email]
 
-            logger.warn('[EMAIL] Got bcc email')
+            logger.debug('[EMAIL] Got bcc email')
 
             # If we didn't find any errors, then render the email and send.
             context_data = RequestContext(self.request, {
@@ -1276,16 +1273,16 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                 'email': recipient_email
             })
 
-            logger.warn('[EMAIL] Got context data')
+            logger.debug('[EMAIL] Got context data')
 
             subject = Template(email_template.subject).render(context_data)
             body = Template(email_template.body_text).render(context_data)
 
-            logger.warn('[EMAIL] Rendered text')
+            logger.debug('[EMAIL] Rendered text')
 
             if email_template.body_html:
                 html_body = Template(email_template.body_html).render(context_data)
-                logger.warn('[EMAIL] Rendered html')
+                logger.debug('[EMAIL] Rendered html')
             else:
                 html_body = None
 
@@ -1306,14 +1303,13 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                 bcc=bcc_list)
             # connection=connection)
 
-            logger.warn('[EMAIL] Created email')
+            logger.debug('[EMAIL] Created email')
 
             if html_body:
                 msg.attach_alternative(html_body, 'text/html')
-                logger.warn('[EMAIL] Attached html')
+                logger.debug('[EMAIL] Attached html')
 
             msg.send()
-            logger.warn('[EMAIL] Sent!')
             logger.info('[EMAIL] Email for place %d sent.', obj.id)
             break
 
