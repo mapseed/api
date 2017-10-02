@@ -215,6 +215,7 @@ class WebhookAdmin(admin.ModelAdmin):
             qs = qs.filter(dataset__owner=user)
         return qs
 
+
 class PlaceEmailTemplateAdmin(admin.ModelAdmin):
     list_display = ('id', 'submission_set', 'event', 'subject', 'body_text', 'body_html',)
     # list_filter = ('name',)
@@ -225,6 +226,7 @@ class PlaceEmailTemplateAdmin(admin.ModelAdmin):
         if not user.is_superuser:
             qs = qs.filter(dataset__owner=user)
         return qs
+
 
 class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
     list_display = ('display_name', 'slug', 'owner')
