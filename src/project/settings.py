@@ -375,6 +375,12 @@ if 'DEBUG' in environ:
     TEMPLATE_DEBUG = DEBUG
     SHOW_DEBUG_TOOLBAR = DEBUG
 
+EMAIL_DEBUG = ((environ.get('EMAIL_DEBUG') or '').lower() in
+                   ('true', 'on', 't', 'yes'))
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' \
+                if not EMAIL_DEBUG else \
+                'django.core.mail.backends.console.EmailBackend'
+
 # Look for the following redis environment variables, in order
 for REDIS_URL_ENVVAR in ('REDIS_URL', 'OPENREDIS_URL'):
     if REDIS_URL_ENVVAR in environ: break
