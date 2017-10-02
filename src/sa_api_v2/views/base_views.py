@@ -1143,7 +1143,7 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
         )
 
         if len(email_templates):
-            self.trigger_emails(email_templates, obj, origin)
+            self.trigger_emails(email_templates, obj)
 
     def get_queryset(self):
         dataset = self.get_dataset()
@@ -1223,7 +1223,7 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                     obj.id, webhook.url, status_code)
                 logger.error(e)
 
-    def trigger_emails(self, email_templates, obj, origin):
+    def trigger_emails(self, email_templates, obj):
         """
         Sends emails based on the origin.
         """
