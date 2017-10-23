@@ -85,13 +85,13 @@ ATTACHMENT_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 # STATICFILES_STORAGE = DEFAULT_FILE_STORAGE
 
 # email notification service:
-if all(k in os.environ for k in ['EMAIL_ADDRESS', 'EMAIL_HOST', 'EMAIL_PORT',
-                                 'EMAIL_USERNAME', 'EMAIL_PASSWORD', 'EMAIL_USE_TLS',
-                                 'EMAIL_NOTIFICATIONS_BCC']):
+if all(k in os.environ for k in ['EMAIL_HOST', 'EMAIL_PORT',
+                                 'EMAIL_HOST_USER', 'EMAIL_HOST_PASSWORD',
+                                 'EMAIL_USE_TLS']):
     EMAIL_HOST = os.environ['EMAIL_HOST']
     EMAIL_PORT = os.environ['EMAIL_PORT']
-    EMAIL_HOST_USER = os.environ['EMAIL_USERNAME']
-    EMAIL_HOST_PASSWORD = os.environ['EMAIL_PASSWORD']
+    EMAIL_HOST_USER = os.environ['EMAIL_HOST_USER']
+    EMAIL_HOST_PASSWORD = os.environ['EMAIL_HOST_PASSWORD']
     EMAIL_USE_TLS = (os.environ['EMAIL_USE_TLS'].lower() in
                      ('true', 'on', 't', 'yes'))
     EMAIL_DEBUG = (os.environ.get('EMAIL_DEBUG').lower() in
