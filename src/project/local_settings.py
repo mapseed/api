@@ -92,7 +92,8 @@ if all(k in os.environ for k in ['EMAIL_ADDRESS', 'EMAIL_HOST', 'EMAIL_PORT',
     EMAIL_PORT = os.environ['EMAIL_PORT']
     EMAIL_HOST_USER = os.environ['EMAIL_USERNAME']
     EMAIL_HOST_PASSWORD = os.environ['EMAIL_PASSWORD']
-    EMAIL_USE_TLS = os.environ['EMAIL_USE_TLS']
+    EMAIL_USE_TLS = (os.environ['EMAIL_USE_TLS'].lower() in
+                     ('true', 'on', 't', 'yes'))
     EMAIL_DEBUG = (os.environ.get('EMAIL_DEBUG').lower() in
                    ('true', 'on', 't', 'yes'))
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' \
