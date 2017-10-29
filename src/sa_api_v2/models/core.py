@@ -215,7 +215,7 @@ class PlaceEmailTemplate (TimeStampedModel):
         db_table = 'sa_api_place_email_templates'
 
     def __unicode__(self):
-        return 'On %s data in %s' % (self.event, self.submission_set)
+        return 'template id: %s' % (self.id)
 
 
 class GeoSubmittedThingQuerySet (query.GeoQuerySet, SubmittedThingQuerySet):
