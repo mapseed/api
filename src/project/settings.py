@@ -375,6 +375,7 @@ if 'DEBUG' in environ:
     TEMPLATE_DEBUG = DEBUG
     SHOW_DEBUG_TOOLBAR = DEBUG
 
+
 # Look for the following redis environment variables, in order
 for REDIS_URL_ENVVAR in ('REDIS_URL', 'OPENREDIS_URL'):
     if REDIS_URL_ENVVAR in environ: break

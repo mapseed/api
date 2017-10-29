@@ -144,7 +144,7 @@ class InlineApiKeyAdmin(admin.StackedInline):
 
 class InlineOriginAdmin(admin.StackedInline):
     model = Origin
-    # raw_id_fields = ['origin']
+    raw_id_fields = ['place_email_template']
     extra = 0
     readonly_fields = ('edit_url',)
 
@@ -216,6 +216,17 @@ class WebhookAdmin(admin.ModelAdmin):
         return qs
 
 
+class PlaceEmailTemplateAdmin(admin.ModelAdmin):
+    list_display = ('id', 'submission_set', 'event', 'subject', 'body_text', 'body_html',)
+    # list_filter = ('name',)
+
+    def get_queryset(self, request):
+        qs = super(PlaceEmailTemplateAdmin, self).get_queryset(request)
+        user = request.user
+        if not user.is_superuser:
+            qs = qs.filter(dataset__owner=user)
+        return qs
+
 
 class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
     list_display = ('display_name', 'slug', 'owner')
@@ -229,7 +240,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     def clear_cache(self, request, obj):
         obj.clear_instance_cache()
-    
+
     def clone_dataset(self, request, obj):
         siblings = models.DataSet.objects.filter(owner=obj.owner)
         slugs = set([ds.slug for ds in siblings])
@@ -396,6 +407,7 @@ admin.site.register(models.Submission, SubmissionAdmin)
 admin.site.register(models.Action, ActionAdmin)
 admin.site.register(models.Group, GroupAdmin)
 admin.site.register(models.Webhook, WebhookAdmin)
+admin.site.register(models.PlaceEmailTemplate, PlaceEmailTemplateAdmin)
 
 admin.site.site_header = 'Shareabouts API Server Administration'
 admin.site.site_title = 'Shareabouts API Server'
