@@ -1135,10 +1135,10 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
         origin = self.request.META.get('HTTP_ORIGIN', '')
         email_templates = [o.place_email_template for o in obj.dataset.origins.all()
                            if cors.models.Origin.match(o.pattern, origin) and
-                              o.place_email_template is not None]
+                           o.place_email_template is not None]
 
         email_templates = filter(
-            lambda et: et.submission_set == 'places' and et.event == 'add',
+            lambda et: et.submission_set in ['places', ''] and et.event == 'add',
             email_templates
         )
 

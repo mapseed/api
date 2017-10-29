@@ -201,7 +201,13 @@ class PlaceEmailTemplate (TimeStampedModel):
         ('add', 'On add'),
     )
 
-    submission_set = models.CharField(max_length=128)
+    submission_set = models.CharField(
+        max_length=128,
+        blank=True,
+        help_text='Either the name of a submission set \
+        (e.g., "comments"), or "places". Leave blank to \
+        refer to all things.'
+    )
     event = models.CharField(max_length=128, choices=EVENT_CHOICES, default='add')
     recipient_email_field = models.CharField(max_length=128)
     from_email = models.EmailField()
