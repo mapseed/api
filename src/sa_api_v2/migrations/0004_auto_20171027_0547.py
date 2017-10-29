@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='origin',
             name='place_email_template',
-            field=models.ForeignKey(related_name='origins', default=None, to='sa_api_v2.PlaceEmailTemplate', null=True),
+            field=models.ForeignKey(related_name='origins', default=None, blank=True, to='sa_api_v2.PlaceEmailTemplate', null=True),
             preserve_default=True,
         ),
     ]

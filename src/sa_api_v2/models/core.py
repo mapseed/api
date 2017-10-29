@@ -191,6 +191,7 @@ class Webhook (TimeStampedModel):
     def __unicode__(self):
         return 'On %s data in %s' % (self.event, self.submission_set)
 
+
 class PlaceEmailTemplate (TimeStampedModel):
     """
     A Place Email is a user-defined email to be sent to the submitter of
