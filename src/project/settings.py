@@ -47,6 +47,8 @@ ROOT_REDIRECT_TO = 'api-root'
 # processed by Django as HTTPS requests
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+USE_X_FORWARDED_HOST = True
+
 ###############################################################################
 #
 # Time Zones
