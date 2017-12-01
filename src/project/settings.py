@@ -43,6 +43,10 @@ API_CACHE_TIMEOUT = 3600  # an hour
 # Where should the user be redirected to when they visit the root of the site?
 ROOT_REDIRECT_TO = 'api-root'
 
+# Ensure forwards from the proxy that originate as HTTPS are passed through and
+# processed by Django as HTTPS requests
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 ###############################################################################
 #
 # Time Zones
