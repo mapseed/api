@@ -221,7 +221,7 @@ SOCIAL_AUTH_USER_MODEL = 'sa_api_v2.User'
 SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email',]
 
 SOCIAL_AUTH_FACEBOOK_EXTRA_DATA = ['name', 'picture', 'about']
-SOCIAL_AUTH_TWITTER_EXTRA_DATA = ['name', 'description', 'profile_image_url']
+SOCIAL_AUTH_TWITTER_EXTRA_DATA = ['name', 'description', 'profile_image_url_https']
 SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['name', 'image', 'aboutMe']
 
 # Explicitly request the following extra things from facebook
