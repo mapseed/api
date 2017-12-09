@@ -145,7 +145,7 @@ class TestSocialUserSerializer (TestCase):
         self.assertIn('avatar_url', serializer.data)
 
         self.assertEqual(serializer.data['name'], 'Mjumbe Poe')
-        self.assertEqual(serializer.data['avatar_url'], 'http://a0.twimg.com/profile_images/1101892515/dreadlocked_browntwitterbird-248x270_bigger.png')
+        self.assertEqual(serializer.data['avatar_url'], 'https://si0.twimg.com/profile_images/1101892515/dreadlocked_browntwitterbird-248x270_bigger.png')
 
     def test_facebook_user_attributes(self):
         serializer = UserSerializer(self.facebook_user)

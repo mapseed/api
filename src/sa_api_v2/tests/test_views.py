@@ -10,7 +10,7 @@ import csv
 import json
 import mock
 from StringIO import StringIO
-from ..models import User, DataSet, Place, Submission, Attachment, Action, Group, DataIndex
+from ..models import User, DataSet, Place, Submission, Attachment, Action, Group, DataIndex, GroupPermission
 from ..cache import cache_buffer
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
@@ -755,6 +755,39 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
 
         # private-secrets is not special, but is private, so should not come
         # back down
+        self.assertNotIn('private-secrets', data['properties'])
+
+    def test_PUT_response_as_group_submitter(self):
+        place_data = json.dumps({
+            'type': 'Feature',
+            'properties': {
+                'type': 'Illegal Dumping',
+                'private-secrets': 'The mayor should know about this.',
+                'submitter': None
+            },
+            'geometry': {"type": "Point", "coordinates": [-74.98, 41.76]},
+        })
+        user = User.objects.create_user(username='temp_user',
+                                        password='lkjasdf')
+        group = Group.objects.create(dataset=self.dataset,
+                                     name='mygroup')
+        group.submitters.add(user)
+        GroupPermission.objects.create(group=group,
+                                       submission_set='places',
+                                       can_update=True)
+
+        request = self.factory.put(self.path, data=place_data,
+                                   content_type='application/json')
+        request.user = user
+        response = self.view(request, **self.request_kwargs)
+        self.assertStatusCode(response, 200)
+
+        data = json.loads(response.rendered_content)
+
+        # Check that our data attributes are correct:
+        self.assertEqual(data['properties'].get('type'), 'Illegal Dumping')
+        self.assertIsNone(data['properties']['submitter'])
+        self.assertNotIn('name', data['properties'])
         self.assertNotIn('private-secrets', data['properties'])
 
     def test_PATCH_response_as_owner(self):

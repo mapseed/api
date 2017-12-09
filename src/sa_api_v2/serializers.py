@@ -351,7 +351,10 @@ class DefaultUserDataStrategy (object):
 
 class TwitterUserDataStrategy (object):
     def extract_avatar_url(self, user_info):
-        url = user_info['profile_image_url']
+        try:
+          url = user_info['profile_image_url_https']
+        except:
+          url = user_info['profile_image_url']
 
         url_pattern = '^(?P<path>.*?)(?:_normal|_mini|_bigger|)(?P<ext>\.[^\.]*)$'
         match = re.match(url_pattern, url)
@@ -376,8 +379,20 @@ class FacebookUserDataStrategy (object):
         return user_info['name']
 
     def extract_bio(self, user_info):
-        return user_info['bio']
+        return user_info['about']
 
+
+class GoogleUserDataStrategy (object):
+    def extract_avatar_url(self, user_info):
+       url = user_info['image']['url']
+       return url
+
+    def extract_full_name(self, user_info):
+        name = user_info['name']['givenName'] + ' ' + user_info['name']['familyName']
+        return name
+
+    def extract_bio(self, user_info):
+        return user_info["aboutMe"]
 
 class ShareaboutsUserDataStrategy (object):
     """
@@ -502,6 +517,7 @@ class BaseUserSerializer (serializers.ModelSerializer):
     strategies = {
         'twitter': TwitterUserDataStrategy(),
         'facebook': FacebookUserDataStrategy(),
+        'google-oauth2': GoogleUserDataStrategy(),
         'shareabouts': ShareaboutsUserDataStrategy()
     }
     default_strategy = DefaultUserDataStrategy()

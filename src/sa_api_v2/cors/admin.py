@@ -11,7 +11,7 @@ class InlineOriginPermissionAdmin(admin.TabularInline):
 
 class OriginAdmin(ModelAdmin):
     inlines = [InlineOriginPermissionAdmin]
-    list_display = ('pattern', 'dataset', 'logged_ip', 'last_used')
+    list_display = ('pattern', 'dataset', 'place_email_template', 'logged_ip', 'last_used')
 
     class Media:
         js = (
