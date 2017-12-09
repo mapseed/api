@@ -27,11 +27,15 @@ For example, to install on Debian/Ubuntu, perform the following:
 
     sudo apt-get install postgresql postgis libpq-dev postgresql-9.4 postgresql-9.4-postgis-2.1 postgresql-server-dev-9.4 python-psycopg2 binutils
 
+Note that the postgres versions may differ anywhere from 9.3 to 9.6, and postgis version may differ between 2.0 to 2.3. For example, on Ubuntu 16.04, you should be able to run this:
+
+    sudo apt-get install postgresql postgis libpq-dev postgresql-9.5 postgresql-9.5-postgis-2.2 postgresql-server-dev-9.5 python-psycopg2 binutils libjpeg8-dev
+
 Create a development database for the Shareabouts data store.
 
     sudo su postgres
 
-For PostGIS 2.0:
+For PostGIS 2.0 and up:
 
     createdb shareabouts_v2
     psql -U postgres -d shareabouts_v2
@@ -76,7 +80,7 @@ For older versions of ubuntu:
 Create a new virtual environment inside of the repository folder, and install
 the project requirements:
 
-    virtualenv env
+    virtualenv -p /usr/bin/python2.7 env
     source env/bin/activate
     pip install -r requirements.txt
 
@@ -120,7 +124,7 @@ Running the Shareabouts Web Application
 -----------------------------------------
 
 For local development, you will probably also want to install and run [the
-front-end mapping application](https://github.com/smartercleanup/duwamish/).
+front-end mapping application](https://github.com/mapseed/platform/).
 
 
 Deployment

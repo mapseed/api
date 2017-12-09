@@ -3,15 +3,13 @@ from __future__ import unicode_literals
 
 from django.db import migrations, models
 import django.core.validators
-import storages.backends.s3boto
-import sa_api_v2.models.core
 import sa_api_v2.models.profiles
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('sa_api_v2', '0002_auto__add_protected_access_flag'),
+        ('sa_api_v2', '0004_auto_20171027_0547'),
     ]
 
     operations = [
@@ -22,9 +20,19 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.AlterField(
-            model_name='attachment',
-            name='file',
-            field=models.FileField(storage=storages.backends.s3boto.S3BotoStorage(), upload_to=sa_api_v2.models.core.timestamp_filename),
+            model_name='placeemailtemplate',
+            name='bcc_email',
+            field=models.EmailField(default=None, max_length=254, blank=True),
+        ),
+        migrations.AlterField(
+            model_name='placeemailtemplate',
+            name='from_email',
+            field=models.EmailField(max_length=254),
+        ),
+        migrations.AlterField(
+            model_name='placeemailtemplate',
+            name='submission_set',
+            field=models.CharField(help_text=b'Either the name of a submission set         (e.g., "comments"), or "places". Leave blank to         refer to all things.', max_length=128, blank=True),
         ),
         migrations.AlterField(
             model_name='user',

@@ -1,21 +1,39 @@
-# https://github.com/travis-ci/travis-ci/wiki/.travis.yml-options
-
-install: "ci/install.sh"
-script: "src/manage.py test project sa_api_v2 remote_client_user --with-coverage --cover-package=sa_api_v2 --cover-package=remote_client_user"
+sudo: required
+dist: trusty
+language: python
 python:
-  - "2.7"
+  - '2.7'
+
+before_install:
+  - sudo apt-get install -y git
+  - git clone https://github.com/LukeSwart/docker-shareabouts.git
+  - docker pull kartoza/postgis:9.4-2.1
+  - cd docker-shareabouts/backend && mv .env.template .env && ./letsdeploy.sh && cd -
+  - mv src/template.env src/.env
+  - sudo apt-get install libgdal-dev python-gdal
+
+install:
+  - pip install --upgrade pip && pip install -r requirements.txt
+
+script:
+  - src/manage.py test
+
+services:
+  - docker
+
 notifications:
   irc:
     channels:
-      - "irc.freenode.org#shareabouts"
-    on_success: change
-    on_failure: always
-  email:
-    recipients:
-     - dev@openplans.org
+      - "irc.freenode.org#heyduwamish"
     on_success: change
     on_failure: always
 
-# branches:
-#   only:
-#     - master
+# env vars for our api secrets to access our AWS Travis CI storage bucket. Only downside - unit tests won't run on PR's of forks.
+# https://docs.travis-ci.com/user/environment-variables/#Defining-encrypted-variables-in-.travis.yml
+# If we want unit tests to run on forks, we can always publish that key publicly,
+# it wouldn't be a big deal to make the bucket publicly accessible.
+env:
+  global:
+    - BOTO_CONFIG=/tmp/nowhere
+  matrix:
+    secure: JwNeeUDYssAHrjhpXgU9TG6IP/OSBnttEw/CmtVuLYytuB3CdhKgN5fd9cq6+tQMqee/lJo4nTyxWddJs9rXbr0vA1SWFYEIaHAE5n5+cNZ12VUIEFD4Y3ymHKWHYvY3xu4UBoTC29WEfeeyyXknJTMWzNrL0NbQC1RTAdLY/DgX/POvOFzzQjmRAops+hx8/65d5q96h/8ubw85JFAOEJHkZNdpgNc2dDCpUZSiT7uCaMcQ/N3KPSz5ddpGzEFJglXqLCagvaMWIAM/Rln7XhlQ3DiF+PZOszju3t9j+Ac/hqQago270jmeF0hNWk2npOeFN6eor1L2sC0yaWwGT/fo+GIv+TEZhHExL63kTMie7Lj96Hsp6RebdkE0v3T4mO31ZRnd0j0BM5zbSUKqiaAaqxTiPQSJYANjgqXgbF4r00ffz4NLvgMEYYbRFtbZXyIR0JxEUZYJ5CR7QBjHwptmhGJux/Gjf1Cw2icGUMrC51ypi60rjp3bZSi6zk58Ky3hhwn1IP0436rMZeeShVRwVHjNc4MCup7chRiOMLY0w8jGLRSKfek53Cr7JINM+lRK26h4gxos9M7W2Wo6Q/6JtgVN5v6E6C6/GnZfwBymN0LEHb3lhZSooaIlc6eMxVdmRVwQhzjvDxSGSxanNC6Bc0QaLd1H90XcsHTTgjI=

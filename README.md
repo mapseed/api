@@ -1,15 +1,17 @@
+[![Build Status](https://secure.travis-ci.org/mapseed/api.png)](http://travis-ci.org/mapseed/api)
+
 Hey Duwamish API
 ===============
 
 The Hey Duwamish API is the data storage and data management component that
-powers the [Hey Duwamish web application](https://github.com/smartercleanup/duwamish).
+powers the [Hey Duwamish web application](https://github.com/mapseed/platform).
 It is a REST API for flexibly storing data about places and an UI for managing
 and exporting your data.
 
 Documentation
 -------------
 All of our documentation is is our `doc` directory. Use it to learn more about:
-* [local setup](https://github.com/smartercleanup/duwamish-api/blob/master/doc/README.md)
+* [local setup](https://github.com/mapseed/api/blob/master/doc/README.md)
 
 Contributing
 ------------

@@ -66,6 +66,11 @@ SOCIAL_AUTH_FACEBOOK_KEY = os.environ.get('SOCIAL_AUTH_FACEBOOK_KEY',
 SOCIAL_AUTH_FACEBOOK_SECRET = os.environ.get('SOCIAL_AUTH_FACEBOOK_SECRET',
                                              'NO_SOCIAL_AUTH_FACEBOOK_SECRET')
 
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ.get('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY',
+                                               'NO_SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ.get('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET',
+                                                  'NO_SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
+
 # Django will use django.core.files.storage.FileSystemStorage by default.
 # Uncomment the following lines if you want to use S3 storage instead.
 #
@@ -78,6 +83,22 @@ ATTACHMENT_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 # DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 # ATTACHMENT_STORAGE = DEFAULT_FILE_STORAGE
 # STATICFILES_STORAGE = DEFAULT_FILE_STORAGE
+
+# email notification service:
+if all(k in os.environ for k in ['EMAIL_HOST', 'EMAIL_PORT',
+                                 'EMAIL_HOST_USER', 'EMAIL_HOST_PASSWORD',
+                                 'EMAIL_USE_TLS']):
+    EMAIL_HOST = os.environ['EMAIL_HOST']
+    EMAIL_PORT = os.environ['EMAIL_PORT']
+    EMAIL_HOST_USER = os.environ['EMAIL_HOST_USER']
+    EMAIL_HOST_PASSWORD = os.environ['EMAIL_HOST_PASSWORD']
+    EMAIL_USE_TLS = (os.environ['EMAIL_USE_TLS'].lower() in
+                     ('true', 'on', 't', 'yes'))
+    EMAIL_DEBUG = (os.environ.get('EMAIL_DEBUG').lower() in
+                   ('true', 'on', 't', 'yes'))
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' \
+                    if not EMAIL_DEBUG else \
+                    'django.core.mail.backends.console.EmailBackend'
 
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID',
                                    'NO_AWS_ACCESS_KEY_ID')

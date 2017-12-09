@@ -7,7 +7,9 @@ from django.db.models import Count, Q
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.test.client import RequestFactory
+from django.core.mail import EmailMultiAlternatives
 from django.test.utils import override_settings
+from django.template import RequestContext, Template
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import (views, permissions, mixins, authentication,
@@ -45,6 +47,7 @@ import re
 import requests
 import ujson as json
 import logging
+import bleach
 
 logger = logging.getLogger('sa_api_v2.views')
 
@@ -152,17 +155,6 @@ def is_really_logged_in(user, request):
             not is_origin_auth(auth))
 
 
-class IsLoggedInOwner(permissions.BasePermission):
-    def has_permission(self, request, view):
-        if not is_really_logged_in(request.user, request):
-            return False
-
-        if request.user.is_superuser or is_owner(request.user, request):
-            return True
-
-        return False
-
-
 class IsOwnerOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         """
@@ -179,6 +171,19 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
             or (hasattr(request, 'client') and
                 hasattr(request.client, 'owner') and
                 is_owner(request.client.owner, request))):
+            return True
+        return False
+
+
+class IsAdminOwnerOrReadOnly(permissions.BasePermission):
+    def has_permission(self, request, view):
+        """
+        Allows only superusers, owners (ie users named by
+        `request.allowed_username`), or logged in users, to write.
+        """
+        if IsOwnerOrReadOnly().has_permission(request, view):
+            return True
+        if is_really_logged_in(request.user, request):
             return True
         return False
 
@@ -425,7 +430,7 @@ class CorsEnabledMixin (object):
     """
     A view that puts Access-Control headers on the response.
     """
-    always_allow_options = False
+    always_allow_options = True
     SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE')
 
     def finalize_response(self, request, response, *args, **kwargs):
@@ -561,7 +566,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     """
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     parser_classes = (JSONParser, FormParser, MultiPartParser)
-    permission_classes = (IsOwnerOrReadOnly, IsAllowedByDataPermissions)
+    permission_classes = (IsAdminOwnerOrReadOnly, IsAllowedByDataPermissions)
     authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = (apikey.auth.ApiKeyAuthentication, cors.auth.OriginAuthentication)
     content_negotiation_class = ShareaboutsContentNegotiation
@@ -789,6 +794,63 @@ class CachedResourceMixin (object):
         return response
 
 
+class Sanitizer(object):
+    """
+    Strip out non-whitelisted HTML tags and attributes in an object of submitted data.
+    """
+    def sanitize(self, obj):
+        field_whitelist = [
+            'geometry', 'showMetadata', 'published', 'datasetSlug',
+            'datasetId', 'location_type', 'style', 'user_token', 'url-title']
+        tag_whitelist = [
+            'div', 'p', 'img', 'a', 'em', 'i', 'code', 'b', 's', 'u',
+            'li', 'ol', 'ul', 'strong', 'br', 'hr', 'span', 'h1',
+            'h2', 'h3', 'h4', 'h5', 'h6', 'iframe', 'html', 'head',
+            'body', 'button'
+        ]
+        attribute_whitelist = {
+            '*': ['style'],
+            'img': ['src', 'alt', 'height', 'width'],
+            'a': ['href'],
+            'iframe': ['frameborder', 'allowfullscreen', 'src', 'width', 'height'],
+            'div': ['id']
+        }
+        styles_whitelist = [
+            'color', 'background-color', 'background-image'
+        ]
+
+        for field_name, value in obj.iteritems():
+            if field_name in field_whitelist:
+                return
+            if type(value) is list:
+                for i in range(len(value)):
+                    value[i] = bleach.clean(
+                        value[i],
+                        strip=True,
+                        tags=tag_whitelist,
+                        attributes=attribute_whitelist,
+                        styles=styles_whitelist
+                    )
+                obj[field_name] = value
+            elif type(value) is dict:
+                for k, v in value.iteritems():
+                    value[k] = bleach.clean(
+                        v,
+                        strip=True,
+                        tags=tag_whitelist,
+                        attributes=attribute_whitelist,
+                        styles=styles_whitelist
+                    )
+            else:
+                obj[field_name] = bleach.clean(
+                    value,
+                    strip=True,
+                    tags=tag_whitelist,
+                    attributes=attribute_whitelist,
+                    styles=styles_whitelist
+                )
+
+
 ###############################################################################
 #
 # Exceptions
@@ -843,7 +905,7 @@ class ShareaboutsAPIRootView (views.APIView):
         return Response(response_data)
 
 
-class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.RetrieveUpdateDestroyAPIView):
+class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     """
     GET
     ---
@@ -891,6 +953,38 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
     renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
 
+    # Override update() here to support HTML sanitization
+    def update(self, request, *args, **kwargs):
+        Sanitizer.sanitize(self, request.DATA)
+
+        partial = kwargs.pop('partial', False)
+        self.object = self.get_object_or_none()
+
+        if self.object is None:
+            created = True
+            save_kwargs = {'force_insert': True}
+            success_status_code = status.HTTP_201_CREATED
+        else:
+            created = False
+            save_kwargs = {'force_update': True}
+            success_status_code = status.HTTP_200_OK
+
+        serializer = self.get_serializer(self.object, data=request.DATA,
+                                         files=request.FILES, partial=partial)
+
+        if serializer.is_valid():
+            try:
+                self.pre_save(serializer.object)
+            except ValidationError as err:
+                # full_clean on model instance may be called in pre_save, so we
+                # have to handle eventual errors.
+                return Response(err.message_dict, status=status.HTTP_400_BAD_REQUEST)
+            self.object = serializer.save(**save_kwargs)
+            self.post_save(self.object, created=created)
+            return Response(serializer.data, status=success_status_code)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     def get_object_or_404(self, pk):
         try:
             return self.model.objects\
@@ -926,7 +1020,7 @@ class PlaceListMixin (object):
     pass
 
 
-class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, bulk_generics.ListCreateBulkUpdateAPIView):
+class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, bulk_generics.ListCreateBulkUpdateAPIView):
     """
 
     GET
@@ -999,6 +1093,23 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
     renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
 
+    # Overriding create so we can sanitize submitted fields, which may
+    # contain raw HTML intended to be rendered in the client
+    def create(self, request, *args, **kwargs):
+        Sanitizer.sanitize(self, request.DATA)
+
+        serializer = self.get_serializer(data=request.DATA, files=request.FILES)
+
+        if serializer.is_valid():
+            self.pre_save(serializer.object)
+            self.object = serializer.save(force_insert=True)
+            self.post_save(self.object, created=True)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED,
+                            headers=headers)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     def get_cache_metakey(self):
         metakey_kwargs = self.kwargs.copy()
         metakey_kwargs.pop('pk_list', None)
@@ -1020,6 +1131,19 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
 
         if len(webhooks):
             self.trigger_webhooks(webhooks, obj)
+
+        origin = self.request.META.get('HTTP_ORIGIN', '')
+        email_templates = [o.place_email_template for o in obj.dataset.origins.all()
+                           if cors.models.Origin.match(o.pattern, origin) and
+                           o.place_email_template is not None]
+
+        email_templates = filter(
+            lambda et: et.submission_set in ['places', ''] and et.event == 'add',
+            email_templates
+        )
+
+        if len(email_templates):
+            self.trigger_emails(email_templates, obj)
 
     def get_queryset(self):
         dataset = self.get_dataset()
@@ -1099,6 +1223,95 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
                     obj.id, webhook.url, status_code)
                 logger.error(e)
 
+    def trigger_emails(self, email_templates, obj):
+        """
+        Sends emails based on the origin.
+        """
+        for email_template in email_templates:
+            logger.info('[EMAIL] Starting email send')
+
+            from_email = email_template.from_email
+
+            logger.debug('[EMAIL] Got from email')
+
+            errors = []
+
+            try:
+                email_field = email_template.recipient_email_field
+                recipient_email = self.request.DATA[email_field]
+                logger.debug('[EMAIL] recipient_email: ' + recipient_email)
+            except KeyError:
+                errors.append("No '%s' field found on the place. "
+                              "Be sure to configure the 'notifications.submitter_"
+                              "email_field' property if necessary." % (email_field,))
+
+            logger.debug('[EMAIL] Got to email')
+
+            # Bail if any errors were found. Send all errors to the logs and otherwise
+            # fail silently.
+            if errors:
+                for error_msg in errors:
+                    logger.error(error_msg)
+                return
+
+            logger.debug('[EMAIL] Going ahead, no errors')
+
+            # If the user didn't provide an email address, then no need to go further.
+            if not recipient_email:
+                return
+
+            logger.debug('[EMAIL] Going ahead, recipient exists')
+
+            # Set optional values
+            bcc_list = [email_template.bcc_email]
+
+            logger.debug('[EMAIL] Got bcc email')
+
+            # If we didn't find any errors, then render the email and send.
+            context_data = RequestContext(self.request, {
+                'place': obj,
+                'email': recipient_email
+            })
+
+            logger.debug('[EMAIL] Got context data')
+
+            subject = Template(email_template.subject).render(context_data)
+            body = Template(email_template.body_text).render(context_data)
+
+            logger.debug('[EMAIL] Rendered text')
+
+            if email_template.body_html:
+                html_body = Template(email_template.body_html).render(context_data)
+                logger.debug('[EMAIL] Rendered html')
+            else:
+                html_body = None
+
+            # connection = smtp.EmailBackend(
+            #     host=...,
+            #     port=...,
+            #     username=...,
+            #     use_tls=...)
+
+            # NOTE: In Django 1.7+, send_mail can handle multi-part email with the
+            # html_message parameter, but pre 1.7 cannot and we must construct the
+            # multipart message manually.
+            msg = EmailMultiAlternatives(
+                subject,
+                body,
+                from_email,
+                to=[recipient_email],
+                bcc=bcc_list)
+            # connection=connection)
+
+            logger.debug('[EMAIL] Created email')
+
+            if html_body:
+                msg.attach_alternative(html_body, 'text/html')
+                logger.debug('[EMAIL] Attached html')
+
+            msg.send()
+            logger.info('[EMAIL] Email for place %d sent.', obj.id)
+            break
 
 class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     """

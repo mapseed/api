@@ -144,7 +144,7 @@ class InlineApiKeyAdmin(admin.StackedInline):
 
 class InlineOriginAdmin(admin.StackedInline):
     model = Origin
-    # raw_id_fields = ['origin']
+    raw_id_fields = ['place_email_template']
     extra = 0
     readonly_fields = ('edit_url',)
 
@@ -216,16 +216,30 @@ class WebhookAdmin(admin.ModelAdmin):
         return qs
 
 
+class PlaceEmailTemplateAdmin(admin.ModelAdmin):
+    list_display = ('id', 'submission_set', 'event', 'subject', 'body_text', 'body_html',)
+    # list_filter = ('name',)
+
+    def get_queryset(self, request):
+        qs = super(PlaceEmailTemplateAdmin, self).get_queryset(request)
+        user = request.user
+        if not user.is_superuser:
+            qs = qs.filter(dataset__owner=user)
+        return qs
+
 
 class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
     list_display = ('display_name', 'slug', 'owner')
     prepopulated_fields = {'slug': ['display_name']}
     search_fields = ('display_name', 'slug', 'owner__username')
 
-    objectactions = ('clone_dataset',)
+    objectactions = ('clone_dataset', 'clear_cache')
     raw_id_fields = ('owner',)
     readonly_fields = ('api_path',)
     inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin, InlineWebhookAdmin]
+
+    def clear_cache(self, request, obj):
+        obj.clear_instance_cache()
 
     def clone_dataset(self, request, obj):
         siblings = models.DataSet.objects.filter(owner=obj.owner)
@@ -311,6 +325,7 @@ class SubmissionAdmin(SubmittedThingAdmin):
 class ActionAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_datetime'
     list_display = ('id', 'created_datetime', 'action', 'type_of_thing', 'submitter_name', 'source')
+    raw_id_fields = ('thing',)
 
     # Pre-Django 1.6
     def queryset(self, request):
@@ -370,6 +385,7 @@ class UserChangeForm(BaseUserChangeForm):
 
 class UserAdmin(BaseUserAdmin):
     form = UserChangeForm
+    change_form_template = 'loginas/change_form.html'
 
     fieldsets = BaseUserAdmin.fieldsets + (
             # (None, {'fields': ('some_extra_data',)}),
@@ -391,6 +407,7 @@ admin.site.register(models.Submission, SubmissionAdmin)
 admin.site.register(models.Action, ActionAdmin)
 admin.site.register(models.Group, GroupAdmin)
 admin.site.register(models.Webhook, WebhookAdmin)
+admin.site.register(models.PlaceEmailTemplate, PlaceEmailTemplateAdmin)
 
 admin.site.site_header = 'Shareabouts API Server Administration'
 admin.site.site_title = 'Shareabouts API Server'

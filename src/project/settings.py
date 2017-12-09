@@ -1,4 +1,6 @@
 from os import environ
+import raven
+import os
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -40,6 +42,12 @@ API_CACHE_TIMEOUT = 3600  # an hour
 
 # Where should the user be redirected to when they visit the root of the site?
 ROOT_REDIRECT_TO = 'api-root'
+
+# Ensure forwards from the proxy that originate as HTTPS are passed through and
+# processed by Django as HTTPS requests
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+USE_X_FORWARDED_HOST = True
 
 ###############################################################################
 #
@@ -167,6 +175,7 @@ INSTALLED_APPS = (
     'django_ace',
     'django_object_actions',
     'djcelery',
+    'loginas',
 
     # OAuth
     # 'provider',
@@ -208,6 +217,7 @@ AUTHENTICATION_BACKENDS = (
     # for list of available backends.
     'social.backends.twitter.TwitterOAuth',
     'social.backends.facebook.FacebookOAuth2',
+    'social.backends.google.GoogleOAuth2',
     'sa_api_v2.auth_backends.CachedModelBackend',
 )
 
@@ -216,11 +226,12 @@ AUTH_USER_MODEL = 'sa_api_v2.User'
 SOCIAL_AUTH_USER_MODEL = 'sa_api_v2.User'
 SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email',]
 
-SOCIAL_AUTH_FACEBOOK_EXTRA_DATA = ['name', 'picture', 'bio']
-SOCIAL_AUTH_TWITTER_EXTRA_DATA = ['name', 'description', 'profile_image_url']
+SOCIAL_AUTH_FACEBOOK_EXTRA_DATA = ['name', 'picture', 'about']
+SOCIAL_AUTH_TWITTER_EXTRA_DATA = ['name', 'description', 'profile_image_url_https']
+SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['name', 'image', 'aboutMe']
 
 # Explicitly request the following extra things from facebook
-SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {'fields': 'id,name,picture.width(96).height(96),first_name,last_name,bio'}
+SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {'fields': 'id,name,picture.width(96).height(96),first_name,last_name,about'}
 
 SOCIAL_AUTH_LOGIN_ERROR_URL = 'remote-social-login-error'
 
@@ -237,6 +248,7 @@ TESTS_MIGRATE = True
 #     'oauth2': 'ignore',
 #     'djcelery': 'ignore',
 # }
+
 
 # Debug toolbar
 def custom_show_toolbar(request):
@@ -265,11 +277,12 @@ DEBUG_TOOLBAR_PANELS = (
 # (See the very end of the file for more debug toolbar settings)
 
 
-################################################################################
-#
+###############################################################################
 # Logging Configuration
-#
+###############################################################################
 
+# disable Django's own log configuration mechanism:
+LOGGING_CONFIG = None
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -280,7 +293,8 @@ LOGGING = {
     },
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(name)s: %(message)s %(process)d %(thread)d'
+            'format': '%(levelname)s %(asctime)s %(name)s: %(message)s ' +
+            '%(process)d %(thread)d'
         },
         'moderate': {
             'format': '%(levelname)s %(asctime)s %(name)s: %(message)s'
@@ -295,21 +309,32 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'moderate'
         },
+        'sentry': {
+            'level': 'WARNING',
+            'class': 'raven.contrib.django.raven_compat.handlers.' +
+            'SentryHandler',
+            'formatter': 'verbose',
+            'tags': {'custom-tag': 'x'},
+        },
     },
     'loggers': {
+        'root': {
+            'handlers': ['console', 'sentry'],
+            'level': 'WARNING'
+        },
         'django.request': {
-            'handlers': ['console'],
+            'handlers': ['console', 'sentry'],
             'level': 'ERROR',
             'propagate': True,
         },
         'sa_api_v2': {
-            'handlers': ['console'],
+            'handlers': ['console', 'sentry'],
             'level': 'INFO',
             'propagate': True,
         },
 
         'django.db.backends': {
-            'handlers': ['console'],
+            'handlers': ['console', 'sentry'],
             'level': 'DEBUG',
             'propagate': True,
         },
@@ -334,6 +359,20 @@ LOGGING = {
     }
 }
 
+# setting the log configuration explicitly ourselves using
+# the Python logging APIs:
+import logging.config
+logging.config.dictConfig(LOGGING)
+
+
+# Sentry config:
+if 'SENTRY_DSN' in environ:
+    RAVEN_CONFIG = {
+        'dsn': environ['SENTRY_DSN'],
+        'release': raven.fetch_git_sha(os.path.dirname(os.pardir)),
+        'CELERY_LOGLEVEL': logging.INFO
+    }
+
 ##############################################################################
 # Environment loading
 
@@ -347,6 +386,7 @@ if 'DEBUG' in environ:
     DEBUG = (environ['DEBUG'].lower() == 'true')
     TEMPLATE_DEBUG = DEBUG
     SHOW_DEBUG_TOOLBAR = DEBUG
+
 
 # Look for the following redis environment variables, in order
 for REDIS_URL_ENVVAR in ('REDIS_URL', 'OPENREDIS_URL'):
