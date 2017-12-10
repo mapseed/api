@@ -1013,8 +1013,8 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
     url = DataSetIdentityField()
     owner = UserRelatedField()
 
-    places = DataSetPlaceSetSummarySerializer(source='*', read_only=True, many=True)
-    submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True, many=True)
+    places = DataSetPlaceSetSummarySerializer(source='*', read_only=True)
+    submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True)
 
     load_from_url = serializers.URLField(write_only=True, required=False)
 
