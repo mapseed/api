@@ -1610,7 +1610,7 @@ class DataSetInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpdateD
         return obj
 
     def put(self, request, owner_username, dataset_slug):
-        response = super(DataSetInstanceView, self).put(request, owner_username=owner_username, dataset_slug=dataset_slug)
+        response = super(DataSetInstanceView, self).put(request, owner_username=owner_username, dataset_slug=dataset_slug, partial=True)
         if 'slug' in response.data and response.data['slug'] != dataset_slug:
             response.status_code = 301
             response['Location'] = response.data['url']
