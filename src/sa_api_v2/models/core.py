@@ -316,6 +316,16 @@ class Attachment (CacheClearingModel, TimeStampedModel):
     name = models.CharField(max_length=128, null=True, blank=True)
     thing = models.ForeignKey('SubmittedThing', related_name='attachments')
 
+    COVER = 'CO'
+    RICH_TEXT = 'RT'
+    ATTACHMENT_TYPE_CHOICES = (
+        (COVER, 'Cover'),
+        (RICH_TEXT, 'Rich Text'),
+    )
+    type = models.CharField(max_length=2,
+                            choices=ATTACHMENT_TYPE_CHOICES,
+                            default=COVER)
+
     cache = cache.AttachmentCache()
     # previous_version = 'sa_api_v1.models.Attachment'
 
