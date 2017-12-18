@@ -19,7 +19,7 @@ class TestAttachmentSerializer (TestCase):
     def setUp(self):
         f = ContentFile('this is a test')
         f.name = 'my_file.txt'
-        self.attachment_model = Attachment(name='my_file', file=f)
+        self.attachment_model = Attachment(name='my_file', file=f, type='RT')
 
     def test_attributes(self):
         serializer = AttachmentSerializer(self.attachment_model)
@@ -30,6 +30,7 @@ class TestAttachmentSerializer (TestCase):
         self.assertIn('updated_datetime', serializer.data)
         self.assertIn('file', serializer.data)
         self.assertIn('name', serializer.data)
+        self.assertIn('type', serializer.data)
 
     def test_can_serlialize_a_null_instance(self):
         serializer = AttachmentSerializer(None)

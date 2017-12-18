@@ -440,7 +440,8 @@ class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
             'created_datetime': obj.created_datetime,
             'updated_datetime': obj.updated_datetime,
             'file': obj.file.storage.url(obj.file.name),
-            'name': obj.name
+            'name': obj.name,
+            'type': obj.type,
         }
         fields = self.get_fields()
 
