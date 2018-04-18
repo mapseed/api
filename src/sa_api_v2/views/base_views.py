@@ -1242,7 +1242,7 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                 recipient_email = self.request.DATA[email_field]
                 logger.debug('[EMAIL] recipient_email: ' + recipient_email)
             except KeyError:
-                recipient_email = None        
+                recipient_email = ""        
 
             logger.debug('[EMAIL] Got to email')
 
