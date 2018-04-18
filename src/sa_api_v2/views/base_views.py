@@ -1242,7 +1242,7 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                 recipient_email = self.request.DATA[email_field]
                 logger.debug('[EMAIL] recipient_email: ' + recipient_email)
             except KeyError:
-                recipient_email = ""        
+                recipient_email = None        
 
             logger.debug('[EMAIL] Got to email')
 
@@ -1300,7 +1300,7 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                 body,
                 from_email,
                 to=[recipient_email],
-                bcc=bcc_list)
+                bcc=bcc_list.split(','))
             # connection=connection)
 
             logger.debug('[EMAIL] Created email')
