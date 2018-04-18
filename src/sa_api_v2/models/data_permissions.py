@@ -3,6 +3,7 @@ from django.db.models.signals import post_save
 from .. import utils
 from .core import CacheClearingModel
 from .core import DataSet
+from .core import Place
 from .mixins import CloneableModelMixin
 
 class DataPermissionManager (models.Manager):
@@ -155,7 +156,7 @@ def any_allow(permissions, do_action, submission_set, protected=False):
             return True
     return False
 
-def check_data_permission(user, client, do_action, dataset, submission_set, protected=False):
+def check_data_permission(user, client, id, do_action, dataset, submission_set, protected=False):
     """
     Check whether the given user has permission on the submission_set in
     the context of the given client (e.g., an API key or an origin). Specify
@@ -187,6 +188,15 @@ def check_data_permission(user, client, do_action, dataset, submission_set, prot
             if (dataset and group.dataset_id == dataset.id and
                 any_allow(group.permissions.all(), do_action, submission_set, protected)):
                 return True
+
+    # Finally, check place permissions
+    if id is not None and user is not None and user.is_authenticated:
+        target_place = Place.objects.get(id=id)
+        submitter = getattr(target_place, 'submitter', None)
+        place_submitter_id = getattr(submitter, 'id', None)
+        user_id = getattr(user, 'id', None)
+        if place_submitter_id == user_id:
+            return True
 
     return False
 
