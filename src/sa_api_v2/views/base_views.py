@@ -1231,6 +1231,7 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
             logger.info('[EMAIL] Starting email send')
 
             from_email = email_template.from_email
+            bcc_email = email_template.bcc_email
 
             logger.debug('[EMAIL] Got from email')
 
@@ -1256,8 +1257,9 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
 
             logger.debug('[EMAIL] Going ahead, no errors')
 
-            # If the user didn't provide an email address, then no need to go further.
-            if not recipient_email:
+            # If the user didn't provide an email address, or no BCC emails are provided,
+            # then no need to go further.
+            if not recipient_email and not bcc_email:
                 return
 
             logger.debug('[EMAIL] Going ahead, recipient exists')
