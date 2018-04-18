@@ -1242,9 +1242,7 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                 recipient_email = self.request.DATA[email_field]
                 logger.debug('[EMAIL] recipient_email: ' + recipient_email)
             except KeyError:
-                errors.append("No '%s' field found on the place. "
-                              "Be sure to configure the 'notifications.submitter_"
-                              "email_field' property if necessary." % (email_field,))
+                recipient_email = ""        
 
             logger.debug('[EMAIL] Got to email')
 
