@@ -1263,7 +1263,7 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
             logger.debug('[EMAIL] Going ahead, recipient exists')
 
             # Set optional values
-            bcc_list = [email_template.bcc_email]
+            bcc_list = email_template.bcc_email.split(',')
 
             logger.debug('[EMAIL] Got bcc email')
 
@@ -1300,7 +1300,7 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                 body,
                 from_email,
                 to=[recipient_email],
-                bcc=bcc_list.split(','))
+                bcc=bcc_list)
             # connection=connection)
 
             logger.debug('[EMAIL] Created email')
