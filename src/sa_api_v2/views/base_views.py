@@ -1247,9 +1247,15 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                 recipient_email = self.request.DATA[email_field]
                 logger.debug('[EMAIL] recipient_email: ' + recipient_email)
             except KeyError:
+                logger.debug('[EMAIL] No primary recipient found. Setting primary recipient to the empty string.')
                 recipient_email = ""        
 
             logger.debug('[EMAIL] Got to email')
+
+            # If the user didn't provide an email address, and no BCC emails are provided,
+            # then we can't send an email
+            if not recipient_email and not bcc_list:
+                errors.append('[EMAIL] Error: No primary recipient and no BCC recipients provided. Email will not be sent.')
 
             # Bail if any errors were found. Send all errors to the logs and otherwise
             # fail silently.
@@ -1259,13 +1265,6 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                 return
 
             logger.debug('[EMAIL] Going ahead, no errors')
-
-            # If the user didn't provide an email address, or no BCC emails are provided,
-            # then no need to go further.
-            if not recipient_email and not bcc_list:
-                return
-
-            logger.debug('[EMAIL] Going ahead, recipient exists')
 
             # If we didn't find any errors, then render the email and send.
             context_data = RequestContext(self.request, {
