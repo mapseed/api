@@ -295,7 +295,9 @@ class IsAllowedByDataPermissions(permissions.BasePermission):
         user = getattr(request, 'user', None)
         client = getattr(request, 'client', None)
         dataset = getattr(request, 'get_dataset', lambda: None)()
-        place_id = request.DATA.get('id', None)
+        place_id = None
+        if 'id' in request.DATA:
+            place_id = request.DATA['id']
 
         return models.check_data_permission(user, client, place_id, do_action, dataset, data_type, protected)
 
