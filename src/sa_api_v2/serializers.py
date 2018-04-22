@@ -779,7 +779,9 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
             dataset = getattr(request, 'get_dataset', lambda: None)()
-            if not check_data_permission(user, client, 'retrieve', dataset, set_name):
+            place_id = request.Data.get('id', None)
+
+            if not check_data_permission(user, client, place_id, 'retrieve', dataset, set_name):
                 continue
 
             # We know that the submission datasets will be the same as the place

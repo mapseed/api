@@ -523,9 +523,10 @@ class DataPermissionTests (TestCase):
         user = User.objects.create(username='myuser')
         dataset = DataSet.objects.create(slug='data', owner_id=owner.id)
         place = Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
+        place_id = place.get('id')
 
         with patch('sa_api_v2.models.data_permissions.any_allow') as any_allow:
-            check_data_permission(user, None, 'retrieve', dataset, 'comments')
+            check_data_permission(user, None, place_id, 'retrieve', dataset, 'comments')
             self.assertEqual(any_allow.call_args[0][2], 'comments')
 
 
