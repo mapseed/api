@@ -27,6 +27,7 @@ jobs:
       - checkout
       - run: git log -3
       - run: apt-get install netcat-openbsd
+      - setup_remote_docker
       - run:
           name: Waiting for Postgres to be ready
           command: |
