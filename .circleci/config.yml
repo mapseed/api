@@ -13,13 +13,12 @@ jobs:
           USERNAME: testuser
           DB_NAME: test_db
           HOST: localhost
-          PORT: 25432
+          PORT: 5432
       - image: kartoza/postgis:9.6-2.4
         environment:
           POSTGRES_PASS: "test1234"
           POSTGRES_USER: "testuser"
           POSTGRES_DBNAME: "test_db"
-          REPLICATE_PORT: 25432
           ALLOW_IP_RANGE: "0.0.0.0/0"
     working_directory: /api
     steps:
@@ -40,9 +39,9 @@ jobs:
       - run:
           name: Waiting for Postgres to be ready
           command: |
-            for i in `seq 1 10`;
+            for i in `seq 1 15`;
             do
-            nc -z localhost 25432 && echo Success && exit 0
+            nc -z localhost 5432 && echo Success && exit 0
             echo -n .
             sleep 1
             done
