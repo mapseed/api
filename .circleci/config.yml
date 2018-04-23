@@ -21,7 +21,13 @@ jobs:
           ALLOW_IP_RANGE: "0.0.0.0/0"
     working_directory: ~/
     steps:
-      - run echo 'starting test!!!'
+      - run:
+          command: |
+            echo 'starting test!!!'
       - checkout
-      - run ls -la
-      - run ./src/manage.py test
+      - run:
+          command: |
+            ls -la
+      - run:
+          command: |
+            ./src/manage.py test
