@@ -12,12 +12,13 @@ jobs:
           PASS: "pass"
           USERNAME: "user"
           HOST: "localhost"
-          PORT: 35432
+          PORT: 25432
       - image: kartoza/postgis:9.6-2.4
         environment:
           POSTGRES_PASS: "pass"
           POSTGRES_USER: "user"
           POSTGRES_DBNAME: "test-db"
+          REPLICATE_PORT: 25432
           ALLOW_IP_RANGE: "0.0.0.0/0"
     working_directory: /api
     steps:
