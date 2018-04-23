@@ -9,17 +9,14 @@ jobs:
     docker:
       - image: smartercleanup/api:release-0.6.5
         environment:
-          PASS: "pass"
-          USERNAME: "user"
-          HOST: "localhost"
+          PASS: pass
+          USERNAME: user
+          HOST: localhost
           PORT: 25432
-      - image: kartoza/postgis:9.6-2.4
+      - image: postgres:9.6
         environment:
-          POSTGRES_PASS: "pass"
-          POSTGRES_USER: "user"
-          POSTGRES_DBNAME: "test-db"
-          REPLICATE_PORT: 25432
-          ALLOW_IP_RANGE: "0.0.0.0/0"
+          POSTGRES_USER: user
+          POSTGRES_DB: test_db
     working_directory: /api
     steps:
       - run: "echo 'starting test!!!'"
@@ -47,6 +44,7 @@ jobs:
             done
             echo Failed waiting for Postgres && exit 1
       - run:
+          name: Set up DB
           command: |
             ./src/manage.py migrate
       - run:
