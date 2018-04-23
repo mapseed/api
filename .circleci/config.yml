@@ -26,16 +26,20 @@ jobs:
       - run: "ls -la"
       - checkout
       - run: git log -3
+      - run: sudo apt-get install netcat-openbsd
       - run:
           name: Waiting for Postgres to be ready
           command: |
             for i in `seq 1 10`;
             do
-            nc -z localhost 5432 && echo Success && exit 0
+            nc -z localhost 25432 && echo Success && exit 0
             echo -n .
             sleep 1
             done
             echo Failed waiting for Postgres && exit 1
+      - run:
+          command: |
+            ./src/manage.py migrate
       - run:
           command: |
             ./src/manage.py test
