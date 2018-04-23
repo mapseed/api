@@ -8,18 +8,18 @@ jobs:
   build:
     docker:
       - image: smartercleanup/api:release-0.6.5
+        environment:
+          PASS: test1234
+          USERNAME: testuser
+          DB_NAME: test_db
+          HOST: localhost
+          PORT: 5432
       - image: kartoza/postgis:9.6-2.4
         environment:
-          POSTGRES_PASS: "test1234"
-          POSTGRES_USER: "testuser"
-          POSTGRES_DBNAME: "test_db"
-          ALLOW_IP_RANGE: "0.0.0.0/0"
-    environment:
-      PASS: test1234
-      USERNAME: testuser
-      DB_NAME: test_db
-      HOST: localhost
-      PORT: 5432
+          POSTGRES_PASS: test1234
+          POSTGRES_USER: testuser
+          POSTGRES_DBNAME: test_db
+          ALLOW_IP_RANGE: 0.0.0.0/0
     working_directory: /api
     steps:
       - checkout
