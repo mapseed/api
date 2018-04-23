@@ -1,0 +1,26 @@
+# Javascript Node CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-javascript/ for more details
+#
+version: 2
+jobs:
+  test:
+    docker:
+      - image: smartercleanup/api:release-0.6.5
+        environment:
+          PASS: "pass"
+          USERNAME: "user"
+          HOST: "localhost"
+          PORT: 35432
+      - image: kartoza/postgis:9.6-2.4
+        environment:
+          POSTGRES_PASS: "pass"
+          POSTGRES_USER: "user"
+          POSTGRES_DBNAME: "test-db"
+          ALLOW_IP_RANGE: "0.0.0.0/0"
+    working_directory: ~/
+    steps:
+      - run echo 'starting test!!!'
+      - checkout
+      - run ls -la
+      - run ./src/manage.py test
