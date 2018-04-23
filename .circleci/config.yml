@@ -19,7 +19,7 @@ jobs:
           POSTGRES_USER: "user"
           POSTGRES_DBNAME: "test-db"
           ALLOW_IP_RANGE: "0.0.0.0/0"
-    working_directory: ~/
+    working_directory: /
     steps:
       - run: "echo 'starting test!!!'"
       - run: "ls -la"
