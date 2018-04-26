@@ -1,0 +1,45 @@
+# Javascript Node CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-javascript/ for more details
+#
+#
+version: 2
+jobs:
+  build:
+    docker:
+      - image: smartercleanup/api:release-0.6.5
+        environment:
+          PASS: test1234
+          USERNAME: testuser
+          DB_NAME: test_db
+          HOST: localhost
+          PORT: 5432
+      - image: kartoza/postgis:9.6-2.4
+        environment:
+          POSTGRES_PASS: test1234
+          POSTGRES_USER: testuser
+          POSTGRES_DBNAME: test_db
+          ALLOW_IP_RANGE: 0.0.0.0/0
+    working_directory: /api
+    steps:
+      - checkout
+        # TODO(luke): add this to the container itself:
+      - run: apt-get install netcat-openbsd
+      - run:
+          name: Waiting for Postgres to be ready
+          command: |
+            for i in `seq 1 15`;
+            do
+            nc -z localhost 5432 && echo Success && exit 0
+            echo -n .
+            sleep 1
+            done
+            echo Failed waiting for Postgres && exit 1
+      - run:
+          name: Set up DB
+          command: |
+            ./src/manage.py migrate
+      - run:
+          name: Run our tests!
+          command: |
+            ./src/manage.py test
