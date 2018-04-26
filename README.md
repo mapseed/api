@@ -1,4 +1,4 @@
-[![Build Status](https://circleci.com/gh/:owner/:repo.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/:owner/:repo.svg?style=shield&circle-token=:circle-token)
+[![Build Status](https://circleci.com/gh/mapseed/api.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/mapseed/api.svg?style=shield&circle-token=:circle-token)
 
 Mapseed API
 ===============

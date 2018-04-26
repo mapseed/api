@@ -36,7 +36,13 @@ jobs:
             done
             echo Failed waiting for Postgres && exit 1
       - run:
-          name: Set up DB
+          # TODO(luke): handle race condition where postgres is up,
+          # but DB is not yet ready
+          name: Waiting for Postgres DB creation
+          command: |
+            sleep 3
+      - run:
+          name: Migrate DB
           command: |
             ./src/manage.py migrate
       - run:
