@@ -533,6 +533,22 @@ class DataPermissionTests (TestCase):
             check_data_permission(user, None, place_id, 'retrieve', dataset, 'comments')
             self.assertEqual(any_allow.call_args[0][2], 'comments')
 
+    def test_place_permissions_allow_all_actions_by_submitter(self):
+        owner = User.objects.create(username='myowner')
+        submitter = User.objects.create(username='mysubmitter')
+        dataset = DataSet.objects.create(slug='data', owner_id=owner.id)
+        place = Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)', submitter_id=submitter.id)
+        place_id = place.id
+
+        # Get rid of the dataset permissions
+        dataset.permissions.all().delete()
+
+        # Place permissions should allow all operations by the submitter
+        self.assertEqual(check_data_permission(submitter, None, place_id, 'retrieve', dataset, 'places'), True)
+        self.assertEqual(check_data_permission(submitter, None, place_id, 'update', dataset, 'places'), True)
+        self.assertEqual(check_data_permission(submitter, None, place_id, 'create', dataset, 'places'), True)
+        self.assertEqual(check_data_permission(submitter, None, place_id, 'destroy', dataset, 'places'), True)
+
 
 # More permissions tests to write:
 # - General client permission allows reading and restricts writing
