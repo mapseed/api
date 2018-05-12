@@ -680,7 +680,7 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
             dataset = obj
-            if not check_data_permission(user, client, 'retrieve', dataset, set_name):
+            if not check_data_permission(user, client, None, 'retrieve', dataset, set_name):
                 continue
 
             obj.submission_set_name = set_name
@@ -753,7 +753,8 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
             dataset = getattr(request, 'get_dataset', lambda: None)()
-            if not check_data_permission(user, client, 'retrieve', dataset, set_name):
+
+            if not check_data_permission(user, client, None, 'retrieve', dataset, set_name):
                 continue
 
             summaries[set_name] = self.summary_to_native(set_name, submissions)
@@ -779,7 +780,8 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
             dataset = getattr(request, 'get_dataset', lambda: None)()
-            if not check_data_permission(user, client, 'retrieve', dataset, set_name):
+
+            if not check_data_permission(user, client, None, 'retrieve', dataset, set_name):
                 continue
 
             # We know that the submission datasets will be the same as the place
