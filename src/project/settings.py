@@ -211,7 +211,8 @@ AUTHENTICATION_BACKENDS = (
     # See http://django-social-auth.readthedocs.org/en/latest/configuration.html
     # for list of available backends.
     'social.backends.twitter.TwitterOAuth',
-    'social.backends.facebook.FacebookOAuth2',
+    #'social.backends.facebook.FacebookOAuth2',
+    'sa_api_v2.auth_backends.NoRedirectStateFacebookOAuth2',
     'social.backends.google.GoogleOAuth2',
     'sa_api_v2.auth_backends.CachedModelBackend',
 )
