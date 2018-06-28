@@ -11,6 +11,7 @@ from django.core.exceptions import ValidationError
 from django.utils.http import urlquote_plus
 from rest_framework import pagination
 from rest_framework import serializers
+from rest_framework.response import Response
 # from rest_framework.reverse import reverse
 
 from . import apikey
@@ -134,8 +135,8 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
     return url
 
 
-class ShareaboutsRelatedField (ShareaboutsFieldMixin,
-                               serializers.HyperlinkedRelatedField):
+class ShareaboutsRelatedField (serializers.HyperlinkedRelatedField,
+                               ShareaboutsFieldMixin):
     """
     Represents a Shareabouts relationship using hyperlinking.
     """
@@ -1076,15 +1077,11 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
     def get_target(self, obj):
         try:
             if obj.thing.place is not None:
-                serializer = PlaceSerializer(obj.thing.place)
+                serializer = PlaceSerializer(obj.thing.place, context=self.context)
             else:
-                serializer = SubmissionSerializer(obj.thing.submission)
+                serializer = SubmissionSerializer(obj.thing.submission, context=self.context)
         except models.Place.DoesNotExist:
-            serializer = SubmissionSerializer(obj.thing.submission)
-
-        # NOTE: If we need 'context' accessible within the serializer's fields,
-        # we can pass it in as a kwarg in the serializer constructor above.
-        serializer.context = self.context
+            serializer = SubmissionSerializer(obj.thing.submission, context=self.context)
 
         return serializer.data
 
@@ -1095,21 +1092,33 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
 # ----------------------
 #
 
-# TODO: We may need to adjust our pagination serializer, which previously
-# used a 'metadata' key. Since pagination is now built into DRF3.3, we'll
-# need to adjust our views/tests accordingly
-# (see:
-# http://www.django-rest-framework.org/api-guide/pagination/#pagenumberpagination)
-# TODO: Do we even need this class?
-class PaginatedResultsSerializer (pagination.PageNumberPagination):
-    many = True
+class MetadataPagination(pagination.PageNumberPagination):
+    page_size_query_param = 'page_size'
+    page_size = 50
 
+    def get_paginated_response(self, data):
+        return Response({
+            'metadata': {
+                'length': self.page.paginator.count,
+                'page': self.page.number,
+                'next': self.get_next_link(),
+                'previous': self.get_previous_link()
+            },
+            'results': data
+        })
 
-# TODO: Do we even need this class?
-class FeatureCollectionSerializer (PaginatedResultsSerializer):
-    results_field = 'features'
+class FeatureCollectionPagination(pagination.PageNumberPagination):
+    page_size_query_param = 'page_size'
+    page_size = 50
 
-    def to_representation(self, obj):
-        data = super(FeatureCollectionSerializer, self).to_representation(obj)
-        data['type'] = 'FeatureCollection'
-        return data
+    def get_paginated_response(self, data):
+        return Response({
+            'metadata': {
+                'length': self.page.paginator.count,
+                'page': self.page.number,
+                'next': self.get_next_link(),
+                'previous': self.get_previous_link()
+            },
+            'type': 'FeatureCollection',
+            'features': data
+        })
