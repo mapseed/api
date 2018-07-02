@@ -135,8 +135,8 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
     return url
 
 
-class ShareaboutsRelatedField (serializers.HyperlinkedRelatedField,
-                               ShareaboutsFieldMixin):
+class ShareaboutsRelatedField (ShareaboutsFieldMixin,
+                               serializers.HyperlinkedRelatedField):
     """
     Represents a Shareabouts relationship using hyperlinking.
     """
@@ -183,7 +183,6 @@ class DataSetKeysRelatedField (ShareaboutsRelatedField):
 class UserRelatedField (ShareaboutsRelatedField):
     view_name = 'user-detail'
     url_arg_names = ('owner_username',)
-    queryset = models.User.objects.all()
 
 
 class PlaceRelatedField (ShareaboutsRelatedField):
@@ -779,7 +778,7 @@ class BasePlaceSerializer (SubmittedThingSerializer,
                            serializers.ModelSerializer):
     geometry = GeometryField(format='wkt')
     attachments = AttachmentSerializer(read_only=True, many=True)
-    submitter = SimpleUserSerializer(read_only=False)
+    submitter = SimpleUserSerializer(read_only=False, required=False)
 
     class Meta:
         model = models.Place
@@ -822,8 +821,7 @@ class BasePlaceSerializer (SubmittedThingSerializer,
         return summaries
 
     def set_to_native(self, set_name, submissions):
-        serializer = SimpleSubmissionSerializer(submissions, many=True)
-        serializer.initialize(parent=self, field_name=None)
+        serializer = SimpleSubmissionSerializer(submissions, many=True, context=self.context)
         return serializer.data
 
     def get_detailed_submission_sets(self, place):
@@ -876,7 +874,9 @@ class BasePlaceSerializer (SubmittedThingSerializer,
         }
 
         if 'url' in fields:
-            data['url'] = fields['url'].to_representation(obj)
+            field = fields['url']
+            field.context = self.context
+            data['url'] = field.to_representation(obj)
 
         data = self.explode_data_blob(data)
 
@@ -905,14 +905,15 @@ class SimplePlaceSerializer (BasePlaceSerializer):
 class PlaceSerializer (BasePlaceSerializer,
                        serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
-    dataset = DataSetRelatedField(queryset=models.Place.objects.all())
-    submitter = UserSerializer(read_only=False)
+    dataset = DataSetRelatedField(queryset=models.Place.objects.all(), required=False)
+    submitter = UserSerializer(required=False)
 
     class Meta (BasePlaceSerializer.Meta):
         pass
 
     def summary_to_native(self, set_name, submissions):
         url_field = SubmissionSetIdentityField()
+        url_field.context = self.context
         set_url = url_field.to_representation(submissions[0])
 
         return {
@@ -922,8 +923,7 @@ class PlaceSerializer (BasePlaceSerializer,
         }
 
     def set_to_native(self, set_name, submissions):
-        serializer = SubmissionSerializer(submissions, many=True)
-        serializer.initialize(parent=self, field_name=None)
+        serializer = SubmissionSerializer(submissions, many=True, context=self.context)
         return serializer.data
 
     def submitter_to_native(self, obj):
@@ -934,7 +934,7 @@ class PlaceSerializer (BasePlaceSerializer,
 class BaseSubmissionSerializer (SubmittedThingSerializer, serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     attachments = AttachmentSerializer(read_only=True, many=True)
-    submitter = SimpleUserSerializer()
+    submitter = SimpleUserSerializer(required=False)
 
     class Meta:
         model = models.Submission
@@ -949,10 +949,10 @@ class SimpleSubmissionSerializer (BaseSubmissionSerializer):
 class SubmissionSerializer (BaseSubmissionSerializer,
                             serializers.HyperlinkedModelSerializer):
     url = SubmissionIdentityField()
-    dataset = DataSetRelatedField(queryset=models.Submission.objects.all())
-    set = SubmissionSetRelatedField(source='*')
-    place = PlaceRelatedField()
-    submitter = UserSerializer()
+    dataset = DataSetRelatedField(queryset=models.Submission.objects.all(), required=False)
+    set = SubmissionSetRelatedField(source='*', required=False)
+    place = PlaceRelatedField(required=False)
+    submitter = UserSerializer(required=False)
 
     class Meta (BaseSubmissionSerializer.Meta):
         pass
@@ -969,30 +969,30 @@ class BaseDataSetSerializer (EmptyModelSerializer,
     # def to_representation(self, obj):
     #     obj = self.ensure_obj(obj)
     #     fields = self.get_fields()
-
+    #
     #     data = {
     #         'id': obj.pk,
     #         'slug': obj.slug,
     #         'display_name': obj.display_name,
     #         'owner': fields['owner'].to_representation(obj) if obj.owner_id else None,
     #     }
-
+    #
     #     if 'places' in fields:
     #         fields['places'].context = self.context
     #         data['places'] = fields['places'].to_representation(obj)
-
+    #
     #     if 'submission_sets' in fields:
     #         fields['submission_sets'].context = self.context
     #         data['submission_sets'] = fields['submission_sets'].to_representation(obj)
-
+    #
     #     if 'url' in fields:
     #         data['url'] = fields['url'].to_representation(obj)
-
+    #
     #     if 'keys' in fields: data['keys'] = fields['keys'].to_representation(obj)
     #     if 'origins' in fields: data['origins'] = fields['origins'].to_representation(obj)
     #     if 'groups' in fields: data['groups'] = fields['groups'].to_representation(obj)
     #     if 'permissions' in fields: data['permissions'] = fields['permissions'].to_representation(obj)
-
+    #
     #     # Construct a SortedDictWithMetaData to get the brosable API form
     #     ret = self._dict_class(data)
     #     ret.fields = self._dict_class()
@@ -1013,7 +1013,7 @@ class SimpleDataSetSerializer (BaseDataSetSerializer, serializers.ModelSerialize
 
 class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSerializer):
     url = DataSetIdentityField()
-    owner = UserRelatedField()
+    owner = UserRelatedField(read_only=True)
 
     places = DataSetPlaceSetSummarySerializer(source='*', read_only=True)
     submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True)
@@ -1021,6 +1021,7 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
     load_from_url = serializers.URLField(write_only=True, required=False)
 
     class Meta (BaseDataSetSerializer.Meta):
+        validators = []
         pass
 
     def validate_load_from_url(self, attrs, source):

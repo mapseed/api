@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.test.client import RequestFactory
 from django.core.urlresolvers import reverse
 from django.core.cache import cache as django_cache
@@ -143,12 +143,10 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         self.assertIn('submitter', data['properties'])
 
         # Check that the URL is right
-        self.assertEqual(data['properties']['url'],
-                         reverse('place-detail',
-                                 args=[self.owner.username,
-                                       self.dataset.slug,
-                                       self.place.id]
-                         ))
+        self.assertEqual(
+            data['properties']['url'],
+            'http://testserver/api/v2/aaron/datasets/ds/places/%s' % self.place.id
+        )
 
         # Check that the submission sets look right
         self.assertEqual(len(data['properties']['submission_sets']), 2)
@@ -1685,7 +1683,7 @@ class TestPlaceListView (APITestMixin, TestCase):
                 'submitter_name': 'Andy',
                 'type': 'Park Bench',
                 'private-secrets': 'The mayor loves this bench',
-                'visible': False
+                'visible': 'false'
             },
             'type': 'Feature',
             'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
@@ -2730,7 +2728,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
           'type': 'Park Bench',
           'private-secrets': 'The mayor loves this bench',
           'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
-          'visible': False
+          'visible': 'false'
         })
 
         request = self.factory.post(self.path, data=place_data, content_type='application/json')
@@ -3814,7 +3812,7 @@ class TestDataSetListView (APITestMixin, TestCase):
         self.assertEqual(data['results'][0]['submission_sets']['likes']['length'], 4)
 
 
-class TestPlaceAttachmentListView (APITestMixin, TestCase):
+class TestPlaceAttachmentListView (APITestMixin, TransactionTestCase):
     def setUp(self):
         cache_buffer.reset()
         django_cache.clear()
@@ -4119,7 +4117,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         self.assertStatusCode(response, 400)
 
 
-class TestSubmissionAttachmentListView (APITestMixin, TestCase):
+class TestSubmissionAttachmentListView (APITestMixin, TransactionTestCase):
     def setUp(self):
         cache_buffer.reset()
         django_cache.clear()

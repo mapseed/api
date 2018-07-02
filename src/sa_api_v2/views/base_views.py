@@ -970,7 +970,7 @@ class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, O
 
         if serializer.is_valid():
             try:
-                self.pre_save(serializer.object)
+                self.pre_save(serializer.instance)
             except ValidationError as err:
                 # full_clean on model instance may be called in pre_save, so we
                 # have to handle eventual errors.
@@ -1096,8 +1096,7 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
         serializer = self.get_serializer(data=request.data)
 
         if serializer.is_valid():
-            self.pre_save(serializer.object)
-            self.object = serializer.save(force_insert=True)
+            self.object = serializer.save(force_insert=True, dataset=self.get_dataset())
             self.post_save(self.object, created=True)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED,
@@ -1111,12 +1110,7 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
         prefix = reverse('place-list', kwargs=metakey_kwargs)
         return prefix + '_keys'
 
-    def pre_save(self, obj):
-        obj.dataset = self.get_dataset()
-
     def post_save(self, obj, created):
-        super(PlaceListView, self).post_save(obj)
-
         # Get all place/add webhooks since we just added a place.
         if not created:
             return
@@ -1417,10 +1411,21 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
         place = get_object_or_404(models.Place, dataset=dataset, id=place_id)
         return place
 
-    def pre_save(self, obj):
-        obj.dataset = self.get_dataset()
-        obj.place = self.get_place(obj.dataset)
-        obj.set_name = self.kwargs[self.submission_set_name_kwarg]
+    def perform_create(self, serializer):
+        dataset = self.get_dataset()
+        serializer.save(
+            dataset=dataset,
+            place=self.get_place(dataset),
+            set_name=self.kwargs[self.submission_set_name_kwarg]
+        )
+
+    def perform_update(self, serializer):
+        dataset = self.get_dataset()
+        serializer.save(
+            dataset=dataset,
+            place=self.get_place(dataset),
+            set_name=self.kwargs[self.submission_set_name_kwarg]
+        )
 
     def get_queryset(self):
         dataset = self.get_dataset()
@@ -1729,13 +1734,10 @@ class DataSetListView (DataSetListMixin, ProtectedOwnedResourceMixin, generics.L
 
     client_authentication_classes = ()
 
-    def pre_save(self, obj):
-        obj.owner = self.get_owner()
-
-    def post_save(self, obj, created=False):
-        # Automatically create a new api key for a new dataset
-        obj.keys.create(
-            dataset=obj,
+    def perform_create(self, serializer):
+        serializer.save(owner=self.get_owner())
+        serializer.instance.keys.create(
+            dataset=serializer.data,
             key=apikey.models.generate_unique_api_key()
         )
 
@@ -1882,6 +1884,7 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
 
     model = models.Attachment
     serializer_class = serializers.AttachmentSerializer
+    pagination_class = serializers.MetadataPagination
 
     thing_id_kwarg = 'thing_id'
     submission_set_name_kwarg = 'submission_set_name'
@@ -1901,14 +1904,13 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
 
         return thing
 
+    def perform_create(self, serializer):
+        serializer.save(thing=self.get_thing())
+
     def get_queryset(self):
         thing = self.get_thing()
         queryset = self.filter_queryset(models.Attachment.objects.all())
         return queryset.filter(thing=thing)
-
-    def pre_save(self, obj):
-        thing = self.get_thing()
-        obj.thing = thing
 
 
 class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIView):
