@@ -1150,10 +1150,14 @@ class TestPlaceListView (APITestMixin, TestCase):
         self.dataset.indexes.add(DataIndex(attr_name='foo'))
 
         from  sa_api_v2.models.core import GeoSubmittedThingQuerySet
+        from django.core import cache
         with mock.patch.object(GeoSubmittedThingQuerySet, 'filter_by_index') as patched_filter:
-            request = self.factory.get(self.path + '?foo=bar')
-            self.view(request, **self.request_kwargs)
-            self.assertEqual(patched_filter.call_count, 1)
+            # We patch django's caching here because otherwise we attempt to save
+            # the filter mock to the cache, which requires pickleability.
+            with mock.patch.object(cache, 'cache') as patched_cache:
+                request = self.factory.get(self.path + '?foo=bar')
+                self.view(request, **self.request_kwargs)
+                self.assertEqual(patched_filter.call_count, 1)
 
     def test_GET_unindexed_response(self):
         Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)', data=json.dumps({'foo': 'bar', 'name': 1})),

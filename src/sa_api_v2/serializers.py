@@ -4,13 +4,12 @@ DjangoRestFramework resources for the Shareabouts REST API.
 from django.utils import six
 import ujson as json
 import re
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from itertools import chain
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ValidationError
 from django.utils.http import urlquote_plus
-from rest_framework import pagination
-from rest_framework import serializers
+from rest_framework import pagination, serializers, fields
 from rest_framework.response import Response
 # from rest_framework.reverse import reverse
 
@@ -276,14 +275,17 @@ class AttachmentFileField (serializers.FileField):
 
 
 class ActivityGenerator (object):
-    def save(self, **kwargs):
+    def save(self, silent=False, **kwargs):
         request = self.context['request']
         silent_header = request.META.get('HTTP_X_SHAREABOUTS_SILENT', 'False')
-        is_silent = silent_header.lower() in ('true', 't', 'yes', 'y')
+        if not silent:
+            silent = silent_header.lower() in ('true', 't', 'yes', 'y')
         request_source = request.META.get('HTTP_REFERER', '')
         return super(ActivityGenerator, self).save(
-            silent=is_silent,
-            source=request_source, **kwargs)
+            silent=silent,
+            source=request_source,
+            **kwargs
+        )
 
 
 class EmptyModelSerializer (object):
@@ -302,22 +304,15 @@ class DataBlobProcessor (EmptyModelSerializer):
     'data' JSON blob of arbitrary key/value pairs.
     """
 
-    def convert_object(self, obj):
-        attrs = super(DataBlobProcessor, self).convert_object(obj)
-
-        data = json.loads(obj.data)
-        del attrs['data']
-        attrs.update(data)
-
-        return attrs
-
-    def restore_fields(self, data, files):
+    def to_internal_value(self, data):
         """
-        Converts a dictionary of data into a dictionary of deserialized fields.
+        Dict of native values <- Dict of primitive datatypes.
         """
-        model = self.opts.model
-        blob = json.loads(self.object.data) if self.partial else {}
-        data_copy = {}
+        known_fields_object = super(DataBlobProcessor, self).to_internal_value(data)
+
+        model = self.Meta.model
+        blob = json.loads(self.instance.data) if self.partial else {}
+        data_copy = OrderedDict()
 
         # Pull off any fields that the model doesn't know about directly
         # and put them into the data blob.
@@ -325,7 +320,7 @@ class DataBlobProcessor (EmptyModelSerializer):
 
         # Also ignore the following field names (treat them like reserved
         # words).
-        known_fields.update(self.base_fields.keys())
+        known_fields.update(self.fields.keys())
 
         # And allow an arbitrary value field named 'data' (don't let the
         # data blob get in the way).
@@ -334,19 +329,30 @@ class DataBlobProcessor (EmptyModelSerializer):
         # Split the incoming data into stuff that will be set straight onto
         # preexisting fields, and stuff that will go into the data blob.
         for key in data:
-            if key in known_fields:
-                data_copy[key] = data[key]
-            else:
+            if key not in known_fields:
                 blob[key] = data[key]
+
+        for key in known_fields_object:
+            data_copy[key] = known_fields_object[key]
 
         data_copy['data'] = json.dumps(blob)
 
         if not self.partial:
-            for field_name, field in self.base_fields.items():
-                if (not field.read_only and field_name not in data_copy):
+            for field_name, field in self.fields.items():
+                if (not field.read_only and field_name not in data_copy and field.default is not fields.empty):
                     data_copy[field_name] = field.default
 
-        return super(DataBlobProcessor, self).restore_fields(data_copy, files)
+        return data_copy
+
+    # TODO: What is this replaced with?
+    def convert_object(self, obj):
+        attrs = super(DataBlobProcessor, self).convert_object(obj)
+
+        data = json.loads(obj.data)
+        del attrs['data']
+        attrs.update(data)
+
+        return attrs
 
     def explode_data_blob(self, data):
         blob = data.pop('data')
@@ -753,32 +759,13 @@ class SubmittedThingSerializer (ActivityGenerator, DataBlobProcessor):
         param = request.GET.get(flagname, 'false')
         return param.lower() not in ('false', 'no', 'off')
 
-    def restore_fields(self, data, files):
-        """
-        Converts a dictionary of data into a dictionary of deserialized fields.
-        """
-        result = super(SubmittedThingSerializer, self).restore_fields(data, files)
-
-        if 'submitter' not in data:
-            # If the thing exists already, use the existing submitter
-            if hasattr(self, 'object') and self.object is not None:
-                result['submitter'] = self.object.submitter
-
-            # Otherwise, set the submitter to the current user
-            else:
-                request = self.context.get('request')
-                if request and request.user.is_authenticated():
-                    result['submitter'] = request.user
-
-        return result
-
 
 # Place serializers
 class BasePlaceSerializer (SubmittedThingSerializer,
                            serializers.ModelSerializer):
     geometry = GeometryField(format='wkt')
     attachments = AttachmentSerializer(read_only=True, many=True)
-    submitter = SimpleUserSerializer(read_only=False, required=False)
+    submitter = SimpleUserSerializer(required=False, allow_null=True)
 
     class Meta:
         model = models.Place
@@ -902,14 +889,37 @@ class SimplePlaceSerializer (BasePlaceSerializer):
         read_only_fields = ('dataset',)
 
 
+class PlaceListSerializer(serializers.ListSerializer):
+    def update(self, instance, validated_data):
+        place_mapping = {place.id: place for place in instance}
+
+        ret = []
+        for item in validated_data:
+            place_id = item['id'] if 'id' in item else None
+            place = None
+            if place_id is not None:
+                place = place_mapping.get(place_id, None)
+            update_or_create_data = item.copy()
+            url_kwargs = self.context['view'].kwargs
+            dataset = models.DataSet.objects.get(slug=url_kwargs['dataset_slug'])
+            update_or_create_data['dataset_id'] = dataset.id
+            if place is None:
+                ret.append(self.child.create(update_or_create_data))
+            else:
+                ret.append(self.child.update(place, update_or_create_data))
+
+        return ret
+
+
 class PlaceSerializer (BasePlaceSerializer,
                        serializers.HyperlinkedModelSerializer):
+    id = serializers.IntegerField(required=False)
     url = PlaceIdentityField()
     dataset = DataSetRelatedField(queryset=models.Place.objects.all(), required=False)
-    submitter = UserSerializer(required=False)
+    submitter = UserSerializer(required=False, allow_null=True)
 
     class Meta (BasePlaceSerializer.Meta):
-        pass
+        list_serializer_class = PlaceListSerializer
 
     def summary_to_native(self, set_name, submissions):
         url_field = SubmissionSetIdentityField()
@@ -934,7 +944,7 @@ class PlaceSerializer (BasePlaceSerializer,
 class BaseSubmissionSerializer (SubmittedThingSerializer, serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     attachments = AttachmentSerializer(read_only=True, many=True)
-    submitter = SimpleUserSerializer(required=False)
+    submitter = SimpleUserSerializer(required=False, allow_null=True)
 
     class Meta:
         model = models.Submission
@@ -945,17 +955,40 @@ class SimpleSubmissionSerializer (BaseSubmissionSerializer):
     class Meta (BaseSubmissionSerializer.Meta):
         read_only_fields = ('dataset', 'place')
 
+class SubmissionListSerializer(serializers.ListSerializer):
+    def update(self, instance, validated_data):
+        submission_mapping = {submission.id: submission for submission in instance}
+
+        ret = []
+        for item in validated_data:
+            submission_id = item['id'] if 'id' in item else None
+            submission = None
+            if submission_id is not None:
+                submission = submission_mapping.get(submission_id, None)
+            update_or_create_data = item.copy()
+            url_kwargs = self.context['view'].kwargs
+            dataset = models.DataSet.objects.get(slug=url_kwargs['dataset_slug'])
+            update_or_create_data['dataset_id'] = dataset.id
+            update_or_create_data['place_id'] = url_kwargs['place_id']
+            update_or_create_data['set_name'] = url_kwargs['submission_set_name']
+            if submission is None:
+                ret.append(self.child.create(update_or_create_data))
+            else:
+                ret.append(self.child.update(submission, update_or_create_data))
+
+        return ret
 
 class SubmissionSerializer (BaseSubmissionSerializer,
                             serializers.HyperlinkedModelSerializer):
+    id = serializers.IntegerField(required=False)
     url = SubmissionIdentityField()
     dataset = DataSetRelatedField(queryset=models.Submission.objects.all(), required=False)
     set = SubmissionSetRelatedField(source='*', required=False)
     place = PlaceRelatedField(required=False)
-    submitter = UserSerializer(required=False)
+    submitter = UserSerializer(required=False, allow_null=True)
 
     class Meta (BaseSubmissionSerializer.Meta):
-        pass
+        list_serializer_class = SubmissionListSerializer
 
 
 # DataSet serializers

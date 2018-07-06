@@ -817,7 +817,7 @@ class Sanitizer(object):
         ]
 
         for field_name, value in obj.iteritems():
-            if field_name in field_whitelist:
+            if field_name in field_whitelist or value is None:
                 return
             if type(value) is list:
                 for i in range(len(value)):
@@ -955,7 +955,7 @@ class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, O
         Sanitizer.sanitize(self, request.data)
 
         partial = kwargs.pop('partial', False)
-        self.object = self.get_object_or_none()
+        self.object = self.get_object()
 
         if self.object is None:
             created = True
@@ -969,17 +969,31 @@ class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, O
         serializer = self.get_serializer(self.object, data=request.data, partial=partial)
 
         if serializer.is_valid():
-            try:
-                self.pre_save(serializer.instance)
-            except ValidationError as err:
-                # full_clean on model instance may be called in pre_save, so we
-                # have to handle eventual errors.
-                return Response(err.message_dict, status=status.HTTP_400_BAD_REQUEST)
-            self.object = serializer.save(**save_kwargs)
-            self.post_save(self.object, created=created)
+            user = self.request.user
+            if serializer.instance is not None and serializer.instance.submitter is not None:
+                user = serializer.instance.submitter
+            if 'submitter' in serializer.validated_data:
+                user = serializer.validated_data['submitter']
+            self.object = serializer.save(
+                submitter=user if user is not None and user.is_authenticated() else None,
+                **save_kwargs
+            )
             return Response(serializer.data, status=success_status_code)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_object_or_none(self, pk):
+        try:
+            return self.model.objects\
+                .filter(pk=pk)\
+                .select_related('dataset', 'dataset__owner', 'submitter')\
+                .prefetch_related('submitter__social_auth',
+                                  'submissions',
+                                  'submissions__attachments',
+                                  'attachments')\
+                .get()
+        except self.model.DoesNotExist:
+            return None
 
     def get_object_or_404(self, pk):
         try:
@@ -1096,7 +1110,14 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
         serializer = self.get_serializer(data=request.data)
 
         if serializer.is_valid():
-            self.object = serializer.save(force_insert=True, dataset=self.get_dataset())
+            user = self.request.user
+            if 'submitter' in serializer.validated_data:
+                user = serializer.validated_data['submitter']
+            self.object = serializer.save(
+                force_insert=True,
+                submitter=user if user is not None and user.is_authenticated() else None,
+                dataset=self.get_dataset()
+            )
             self.post_save(self.object, created=True)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED,
@@ -1413,18 +1434,14 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
 
     def perform_create(self, serializer):
         dataset = self.get_dataset()
+        user = self.request.user
+        if 'submitter' in serializer.validated_data and serializer.validated_data['submitter'] is not None:
+            user = serializer.validated_data['submitter']
         serializer.save(
             dataset=dataset,
             place=self.get_place(dataset),
-            set_name=self.kwargs[self.submission_set_name_kwarg]
-        )
-
-    def perform_update(self, serializer):
-        dataset = self.get_dataset()
-        serializer.save(
-            dataset=dataset,
-            place=self.get_place(dataset),
-            set_name=self.kwargs[self.submission_set_name_kwarg]
+            set_name=self.kwargs[self.submission_set_name_kwarg],
+            submitter=user if user.is_authenticated() else None,
         )
 
     def get_queryset(self):
@@ -1829,10 +1846,8 @@ class DataSetListView (DataSetListMixin, ProtectedOwnedResourceMixin, generics.L
             overrides['slug'] = unique_slug
 
         clone = original.clone(overrides=overrides, commit=False)
-        self.pre_save(clone)
         clone.save()
         tasks.clone_related_dataset_data.apply_async(args=[original.id, clone.id])
-        self.post_save(clone, created=True)
 
         serializer = self.get_serializer(instance=clone)
         headers = self.get_success_headers(serializer.data)

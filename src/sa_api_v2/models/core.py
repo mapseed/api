@@ -29,7 +29,22 @@ class ModelWithDataBlob (models.Model):
 
 
 class SubmittedThingQuerySet (FilterByIndexMixin, query.QuerySet):
-    pass
+    # Custom version of create that passes needed kwargs to save.
+    def create(self, silent=False, reindex=False, source='', force_insert=True, *args, **kwargs):
+        """
+        Creates a new object with the given kwargs, saving it to the database
+        and returning the created object.
+        """
+        obj = self.model(*args, **kwargs)
+        self._for_write = True
+        obj.save(
+            force_insert=force_insert,
+            using=self.db,
+            silent=silent,
+            reindex=reindex,
+            source=source,
+        )
+        return obj
 
 
 class SubmittedThingManager (FilterByIndexMixin, models.Manager):
