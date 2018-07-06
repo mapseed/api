@@ -1002,30 +1002,30 @@ class BaseDataSetSerializer (EmptyModelSerializer,
     # def to_representation(self, obj):
     #     obj = self.ensure_obj(obj)
     #     fields = self.get_fields()
-    #
+
     #     data = {
     #         'id': obj.pk,
     #         'slug': obj.slug,
     #         'display_name': obj.display_name,
     #         'owner': fields['owner'].to_representation(obj) if obj.owner_id else None,
     #     }
-    #
+
     #     if 'places' in fields:
     #         fields['places'].context = self.context
     #         data['places'] = fields['places'].to_representation(obj)
-    #
+
     #     if 'submission_sets' in fields:
     #         fields['submission_sets'].context = self.context
     #         data['submission_sets'] = fields['submission_sets'].to_representation(obj)
-    #
+
     #     if 'url' in fields:
     #         data['url'] = fields['url'].to_representation(obj)
-    #
+
     #     if 'keys' in fields: data['keys'] = fields['keys'].to_representation(obj)
     #     if 'origins' in fields: data['origins'] = fields['origins'].to_representation(obj)
     #     if 'groups' in fields: data['groups'] = fields['groups'].to_representation(obj)
     #     if 'permissions' in fields: data['permissions'] = fields['permissions'].to_representation(obj)
-    #
+
     #     # Construct a SortedDictWithMetaData to get the brosable API form
     #     ret = self._dict_class(data)
     #     ret.fields = self._dict_class()
