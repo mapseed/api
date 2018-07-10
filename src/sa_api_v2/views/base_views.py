@@ -818,7 +818,7 @@ class Sanitizer(object):
 
         for field_name, value in obj.iteritems():
             if field_name in field_whitelist or value is None:
-                return
+                continue
             if type(value) is list:
                 for i in range(len(value)):
                     value[i] = bleach.clean(
@@ -838,7 +838,7 @@ class Sanitizer(object):
                         attributes=attribute_whitelist,
                         styles=styles_whitelist
                     )
-            else:
+            elif type(value) is str:
                 obj[field_name] = bleach.clean(
                     value,
                     strip=True,
@@ -955,7 +955,7 @@ class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, O
         Sanitizer.sanitize(self, request.data)
 
         partial = kwargs.pop('partial', False)
-        self.object = self.get_object()
+        self.object = self.get_object_or_none()
 
         if self.object is None:
             created = True
@@ -982,7 +982,9 @@ class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, O
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def get_object_or_none(self, pk):
+    def get_object_or_none(self, pk=None):
+        if pk is None:
+            pk = self.kwargs['place_id']
         try:
             return self.model.objects\
                 .filter(pk=pk)\
@@ -995,18 +997,11 @@ class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, O
         except self.model.DoesNotExist:
             return None
 
-    def get_object_or_404(self, pk):
-        try:
-            return self.model.objects\
-                .filter(pk=pk)\
-                .select_related('dataset', 'dataset__owner', 'submitter')\
-                .prefetch_related('submitter__social_auth',
-                                  'submissions',
-                                  'submissions__attachments',
-                                  'attachments')\
-                .get()
-        except self.model.DoesNotExist:
+    def get_object_or_404(self, pk=None):
+        obj = self.get_object_or_none(pk)
+        if obj is None:
             raise Http404
+        return obj
 
     def get_object(self, queryset=None):
         place_id = self.kwargs['place_id']

@@ -1687,7 +1687,7 @@ class TestPlaceListView (APITestMixin, TestCase):
                 'submitter_name': 'Andy',
                 'type': 'Park Bench',
                 'private-secrets': 'The mayor loves this bench',
-                'visible': 'false'
+                'visible': False
             },
             'type': 'Feature',
             'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
@@ -2732,7 +2732,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
           'type': 'Park Bench',
           'private-secrets': 'The mayor loves this bench',
           'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
-          'visible': 'false'
+          'visible': False
         })
 
         request = self.factory.post(self.path, data=place_data, content_type='application/json')
