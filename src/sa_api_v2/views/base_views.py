@@ -1869,6 +1869,7 @@ class AdminDataSetListView (CachedResourceMixin, DataSetListMixin, generics.List
     ------------------------------------------------------------
     """
 
+    queryset = models.DataSet.objects.all()
     permission_classes = (IsLoggedInAdmin,)
     content_negotiation_class = ShareaboutsContentNegotiation
 
