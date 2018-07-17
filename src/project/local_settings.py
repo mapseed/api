@@ -181,8 +181,15 @@ LOGGING = {
         }
 }
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+# Look for the following redis environment variables, in order
+for REDIS_URL_ENVVAR in ('REDIS_URL', 'OPENREDIS_URL'):
+    if REDIS_URL_ENVVAR in os.environ: break
+else:
+    REDIS_URL_ENVVAR = None
+
+if not REDIS_URL_ENVVAR:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+        }
     }
-}
