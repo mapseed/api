@@ -145,7 +145,11 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # Check that the URL is right
         self.assertEqual(
             data['properties']['url'],
-            'http://testserver/api/v2/aaron/datasets/ds/places/%s' % self.place.id
+            'http://testserver' +
+                reverse(
+                    'place-detail',
+                    args=[self.owner.username, self.dataset.slug, self.place.id]
+                )
         )
 
         # Check that the submission sets look right
