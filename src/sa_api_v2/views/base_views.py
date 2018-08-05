@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth import views as auth_views
 from django.contrib.gis.geos import GEOSGeometry, Point, Polygon
 from django.core import cache as django_cache
+from django.core.files.base import ContentFile
 from django.core.urlresolvers import reverse
 from django.db.models import Count, Q
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
@@ -1891,6 +1892,42 @@ class AdminDataSetListView (CachedResourceMixin, DataSetListMixin, generics.List
     content_negotiation_class = ShareaboutsContentNegotiation
 
 
+class AttachmentInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpdateAPIView):
+    """
+
+    GET
+    ---
+    Get a particular attachment
+
+    **Authentication**: Basic, session, or key auth *(optional)*
+
+    PUT
+    ----
+    Update an attachment
+
+    **Authentication**: Basic, session, or key auth *(required)*
+
+    ------------------------------------------------------------
+    """
+    
+    model = models.Attachment
+    serializer_class = serializers.AttachmentSerializer
+
+    def get_object_or_404(self, pk):
+        try:
+            return self.model.objects\
+                .filter(pk=pk)\
+                .get()
+        except self.model.DoesNotExist:
+            raise Http404
+
+    def get_object(self, queryset=None):
+        attachment_id = self.kwargs['attachment_id']
+        obj = self.get_object_or_404(attachment_id)
+        self.verify_object(obj)
+        return obj
+
+
 class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
     """
 
@@ -1902,7 +1939,6 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
 
     POST
     ----
-
     Attach a file to a place or submission
 
     **Authentication**: Basic, session, or key auth *(required)*

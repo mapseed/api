@@ -111,6 +111,7 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
         'dataset-detail': '/{owner_username}/datasets/{dataset_slug}',
         'user-detail': '/{owner_username}',
         'dataset-submission-list': '/{owner_username}/datasets/{dataset_slug}/{submission_set_name}',
+        'attachment-detail': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}/attachments/{attachment_id}',
     }
 
     try:
@@ -200,6 +201,11 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
 
 class PlaceIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id')
+
+
+class AttachmentIdentityField (ShareaboutsIdentityField):
+    url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'attachment_id')
+    view_name = 'attachment-detail'
 
 
 class SubmissionSetIdentityField (ShareaboutsIdentityField):
@@ -429,23 +435,30 @@ class ShareaboutsUserDataStrategy (object):
 
 class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
     file = AttachmentFileField()
+    url = AttachmentIdentityField()
 
     class Meta:
         model = models.Attachment
-        exclude = ('id', 'thing',)
+        exclude = ('id', 'thing', 'file')
 
     def to_native(self, obj):
         obj = self.ensure_obj(obj)
         data = {
+            'id': obj.pk,
             'created_datetime': obj.created_datetime,
             'updated_datetime': obj.updated_datetime,
             'file': obj.file.storage.url(obj.file.name),
             'name': obj.name,
             'type': obj.type,
+            'visible': obj.visible,
+            'saved': True,
         }
         fields = self.get_fields()
 
-        # Construct a SortedDictWithMetaData to get the brosable API form
+        if 'url' in fields:
+            data['url'] = fields['url'].field_to_native(obj, 'pk')
+
+        # Construct a SortedDictWithMetaData to get the browsable API form
         ret = self._dict_class(data)
         ret.fields = self._dict_class()
         for field_name, field in fields.iteritems():
@@ -794,7 +807,7 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
         return details
 
     def attachments_to_native(self, obj):
-        return [AttachmentSerializer(a).data for a in obj.attachments.all()]
+        return [AttachmentSerializer(a, context=self.context).data for a in obj.attachments.all()]
 
     def submitter_to_native(self, obj):
         return SimpleUserSerializer(obj.submitter).data if obj.submitter else None
