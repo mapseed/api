@@ -2,7 +2,6 @@ from django.conf import settings
 from django.contrib.auth import views as auth_views
 from django.contrib.gis.geos import GEOSGeometry, Point, Polygon
 from django.core import cache as django_cache
-from django.core.files.base import ContentFile
 from django.core.urlresolvers import reverse
 from django.db.models import Count, Q
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
