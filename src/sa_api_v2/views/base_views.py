@@ -1901,8 +1901,8 @@ class AttachmentInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpda
 
     **Authentication**: Basic, session, or key auth *(optional)*
 
-    PUT
-    ----
+    PATCH
+    -----
     Update an attachment
 
     **Authentication**: Basic, session, or key auth *(required)*
