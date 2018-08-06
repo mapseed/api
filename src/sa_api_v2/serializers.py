@@ -464,12 +464,12 @@ class AttachmentListSerializer (AttachmentSerializerMixin):
 
     class Meta:
         model = models.Attachment
-        exclude = ('thing', 'id')
+        exclude = ('thing',)
 
 class AttachmentInstanceSerializer (AttachmentSerializerMixin):
     class Meta:
         model = models.Attachment
-        exclude = ('id', 'thing', 'file')
+        exclude = ('thing', 'file')
 
 class DataSetPermissionSerializer (serializers.ModelSerializer):
     class Meta:
