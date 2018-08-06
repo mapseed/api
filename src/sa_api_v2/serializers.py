@@ -336,6 +336,32 @@ class DataBlobProcessor (EmptyModelSerializer):
         return data
 
 
+class AttachmentSerializerMixin (EmptyModelSerializer, serializers.ModelSerializer):
+    def to_native(self, obj):
+        obj = self.ensure_obj(obj)
+        data = {
+            'id': obj.pk,
+            'created_datetime': obj.created_datetime,
+            'updated_datetime': obj.updated_datetime,
+            'file': obj.file.storage.url(obj.file.name),
+            'name': obj.name,
+            'type': obj.type,
+            'visible': obj.visible,
+        }
+        fields = self.get_fields()
+
+        if 'url' in fields:
+            data['url'] = fields['url'].field_to_native(obj, 'pk')
+
+        # Construct a SortedDictWithMetaData to get the browsable API form
+        ret = self._dict_class(data)
+        ret.fields = self._dict_class()
+        for field_name, field in fields.iteritems():
+            value = data[field_name]
+            ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
+        return ret
+
+
 ###############################################################################
 #
 # User Data Strategies
@@ -431,41 +457,19 @@ class ShareaboutsUserDataStrategy (object):
 #    hyperlinked serializer. This is more useful for bulk data dumps where all
 #    of the related data is included in a package.
 #
-
-
-class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
+ 
+class AttachmentListSerializer (AttachmentSerializerMixin):
     file = AttachmentFileField()
     url = AttachmentIdentityField()
 
     class Meta:
         model = models.Attachment
+        exclude = ('thing', 'id')
+
+class AttachmentInstanceSerializer (AttachmentSerializerMixin):
+    class Meta:
+        model = models.Attachment
         exclude = ('id', 'thing', 'file')
-
-    def to_native(self, obj):
-        obj = self.ensure_obj(obj)
-        data = {
-            'id': obj.pk,
-            'created_datetime': obj.created_datetime,
-            'updated_datetime': obj.updated_datetime,
-            'file': obj.file.storage.url(obj.file.name),
-            'name': obj.name,
-            'type': obj.type,
-            'visible': obj.visible,
-            'saved': True,
-        }
-        fields = self.get_fields()
-
-        if 'url' in fields:
-            data['url'] = fields['url'].field_to_native(obj, 'pk')
-
-        # Construct a SortedDictWithMetaData to get the browsable API form
-        ret = self._dict_class(data)
-        ret.fields = self._dict_class()
-        for field_name, field in fields.iteritems():
-            value = data[field_name]
-            ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
-        return ret
-
 
 class DataSetPermissionSerializer (serializers.ModelSerializer):
     class Meta:
@@ -731,7 +735,7 @@ class SubmittedThingSerializer (ActivityGenerator, DataBlobProcessor):
 # Place serializers
 class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer):
     geometry = GeometryField(format='wkt')
-    attachments = AttachmentSerializer(read_only=True, many=True)
+    attachments = AttachmentListSerializer(read_only=True, many=True)
     submitter = SimpleUserSerializer(read_only=False)
 
     class Meta:
@@ -807,7 +811,7 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
         return details
 
     def attachments_to_native(self, obj):
-        return [AttachmentSerializer(a, context=self.context).data for a in obj.attachments.all()]
+        return [AttachmentListSerializer(a, context=self.context).data for a in obj.attachments.all()]
 
     def submitter_to_native(self, obj):
         return SimpleUserSerializer(obj.submitter).data if obj.submitter else None
@@ -884,7 +888,7 @@ class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializ
 # Submission serializers
 class BaseSubmissionSerializer (SubmittedThingSerializer, serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
-    attachments = AttachmentSerializer(read_only=True, many=True)
+    attachments = AttachmentListSerializer(read_only=True, many=True)
     submitter = SimpleUserSerializer()
 
     class Meta:

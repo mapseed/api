@@ -1902,7 +1902,7 @@ class AttachmentInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpda
 
     PATCH
     -----
-    Update an attachment
+    Update an attachment's metadata, though not the attachment itself
 
     **Authentication**: Basic, session, or key auth *(required)*
 
@@ -1910,7 +1910,7 @@ class AttachmentInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpda
     """
     
     model = models.Attachment
-    serializer_class = serializers.AttachmentSerializer
+    serializer_class = serializers.AttachmentInstanceSerializer
 
     def partial_update(self, *args, **kwargs):
         attachment_id = self.kwargs['attachment_id']
@@ -1952,7 +1952,7 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
     """
 
     model = models.Attachment
-    serializer_class = serializers.AttachmentSerializer
+    serializer_class = serializers.AttachmentListSerializer
 
     thing_id_kwarg = 'thing_id'
     submission_set_name_kwarg = 'submission_set_name'
