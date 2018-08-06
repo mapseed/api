@@ -1912,6 +1912,12 @@ class AttachmentInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpda
     model = models.Attachment
     serializer_class = serializers.AttachmentSerializer
 
+    def partial_update(self, *args, **kwargs):
+        attachment_id = self.kwargs['attachment_id']
+        obj = self.get_object_or_404(attachment_id)
+        self.model.clear_instance_cache(obj)
+        return super(AttachmentInstanceView, self).partial_update(*args, **kwargs) 
+
     def get_object_or_404(self, pk):
         try:
             return self.model.objects\
