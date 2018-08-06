@@ -517,7 +517,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.place.id>);
         #
-        with self.assertNumQueries(11):
+        with self.assertNumQueries(14):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -577,7 +577,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.place.id>);
         #
-        with self.assertNumQueries(11):
+        with self.assertNumQueries(14):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -634,7 +634,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.place.id>);
         #
-        with self.assertNumQueries(16):
+        with self.assertNumQueries(22):
             response = self.view(anon_request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
             response = self.view(auth_request, **self.request_kwargs)
