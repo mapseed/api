@@ -40,7 +40,7 @@ jobs:
           # but DB is not yet ready
           name: Waiting for Postgres DB creation
           command: |
-            sleep 3
+            sleep 5
       - run:
           name: Migrate DB
           command: |
