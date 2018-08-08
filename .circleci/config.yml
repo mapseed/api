@@ -7,7 +7,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: smartercleanup/api:release-0.6.5
+      - image: mapseed/api:release-0.6.10
         environment:
           PASS: test1234
           USERNAME: testuser
