@@ -9,7 +9,7 @@ import sa_api_v2.models.profiles
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('sa_api_v2', '0006_attachment_type'),
+        ('sa_api_v2', '0007_auto_20180420_2202'),
     ]
 
     operations = [
@@ -21,8 +21,28 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterField(
             model_name='placeemailtemplate',
-            name='bcc_email',
-            field=models.EmailField(default=None, max_length=254, blank=True),
+            name='bcc_email_1',
+            field=models.EmailField(default=None, max_length=254, null=True, blank=True),
+        ),
+        migrations.AlterField(
+            model_name='placeemailtemplate',
+            name='bcc_email_2',
+            field=models.EmailField(default=None, max_length=254, null=True, blank=True),
+        ),
+        migrations.AlterField(
+            model_name='placeemailtemplate',
+            name='bcc_email_3',
+            field=models.EmailField(default=None, max_length=254, null=True, blank=True),
+        ),
+        migrations.AlterField(
+            model_name='placeemailtemplate',
+            name='bcc_email_4',
+            field=models.EmailField(default=None, max_length=254, null=True, blank=True),
+        ),
+        migrations.AlterField(
+            model_name='placeemailtemplate',
+            name='bcc_email_5',
+            field=models.EmailField(default=None, max_length=254, null=True, blank=True),
         ),
         migrations.AlterField(
             model_name='placeemailtemplate',

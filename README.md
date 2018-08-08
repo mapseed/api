@@ -1,10 +1,10 @@
-[![Build Status](https://secure.travis-ci.org/mapseed/api.png)](http://travis-ci.org/mapseed/api)
+[![Build Status](https://circleci.com/gh/mapseed/api.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/mapseed/api.svg?style=shield&circle-token=:circle-token)
 
-Hey Duwamish API
+Mapseed API
 ===============
 
-The Hey Duwamish API is the data storage and data management component that
-powers the [Hey Duwamish web application](https://github.com/mapseed/platform).
+The Mapseed API is the data storage and data management component that
+powers the [Mapseed web application](https://github.com/mapseed/platform).
 It is a REST API for flexibly storing data about places and an UI for managing
 and exporting your data.
 
@@ -31,4 +31,4 @@ Here are some ways *you* can contribute:
 
 Credits
 -------------
-Hey Duwamish is powered by Shareabouts, a project of [OpenPlans](http://openplans.org).
+Mapseed is powered by Shareabouts, a project of [OpenPlans](http://openplans.org).

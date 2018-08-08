@@ -297,8 +297,11 @@ class IsAllowedByDataPermissions(permissions.BasePermission):
         user = getattr(request, 'user', None)
         client = getattr(request, 'client', None)
         dataset = getattr(request, 'get_dataset', lambda: None)()
+        place_id = None
+        if 'id' in request.data:
+            place_id = request.data['id']
 
-        return models.check_data_permission(user, client, do_action, dataset, data_type, protected)
+        return models.check_data_permission(user, client, place_id, do_action, dataset, data_type, protected)
 
 
 ###############################################################################
@@ -1225,6 +1228,12 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
             logger.info('[EMAIL] Starting email send')
 
             from_email = email_template.from_email
+            bcc_sources = [email_template.bcc_email_1,
+                           email_template.bcc_email_2,
+                           email_template.bcc_email_3,
+                           email_template.bcc_email_4,
+                           email_template.bcc_email_5]
+            bcc_list = [source for source in bcc_sources if source]
 
             logger.debug('[EMAIL] Got from email')
 
@@ -1235,11 +1244,15 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                 recipient_email = self.request.data[email_field]
                 logger.debug('[EMAIL] recipient_email: ' + recipient_email)
             except KeyError:
-                errors.append("No '%s' field found on the place. "
-                              "Be sure to configure the 'notifications.submitter_"
-                              "email_field' property if necessary." % (email_field,))
+                logger.debug('[EMAIL] No primary recipient found. Setting primary recipient to the empty string.')
+                recipient_email = ""        
 
             logger.debug('[EMAIL] Got to email')
+
+            # If the user didn't provide an email address, and no BCC emails are provided,
+            # then we can't send an email
+            if not recipient_email and not bcc_list:
+                errors.append('[EMAIL] Error: No primary recipient and no BCC recipients provided. Email will not be sent.')
 
             # Bail if any errors were found. Send all errors to the logs and otherwise
             # fail silently.
@@ -1249,17 +1262,6 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                 return
 
             logger.debug('[EMAIL] Going ahead, no errors')
-
-            # If the user didn't provide an email address, then no need to go further.
-            if not recipient_email:
-                return
-
-            logger.debug('[EMAIL] Going ahead, recipient exists')
-
-            # Set optional values
-            bcc_list = [email_template.bcc_email]
-
-            logger.debug('[EMAIL] Got bcc email')
 
             # If we didn't find any errors, then render the email and send.
             context_data = RequestContext(self.request, {
