@@ -359,6 +359,7 @@ class AttachmentSerializerMixin (EmptyModelSerializer, serializers.ModelSerializ
         for field_name, field in fields.iteritems():
             value = data[field_name]
             ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
+
         return ret
 
 
@@ -811,7 +812,7 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
         return details
 
     def attachments_to_native(self, obj):
-        return [AttachmentListSerializer(a, context=self.context).data for a in obj.attachments.all()]
+        return [AttachmentListSerializer(a, context=self.context).data for a in obj.attachments.filter(visible=True)]
 
     def submitter_to_native(self, obj):
         return SimpleUserSerializer(obj.submitter).data if obj.submitter else None
