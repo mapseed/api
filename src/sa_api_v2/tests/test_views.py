@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.test.client import RequestFactory
 from django.core.urlresolvers import reverse
 from django.core.cache import cache as django_cache
@@ -17,7 +17,7 @@ from ..apikey.auth import KEY_HEADER
 from ..cors.models import Origin
 from ..views import (PlaceInstanceView, PlaceListView, SubmissionInstanceView,
     SubmissionListView, DataSetSubmissionListView, DataSetInstanceView,
-    DataSetListView, AttachmentListView, ActionListView)
+    DataSetListView, AdminDataSetListView, AttachmentListView, ActionListView)
 
 
 class APITestMixin (object):
@@ -143,12 +143,14 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         self.assertIn('submitter', data['properties'])
 
         # Check that the URL is right
-        self.assertEqual(data['properties']['url'],
-                         reverse('place-detail',
-                                 args=[self.owner.username,
-                                       self.dataset.slug,
-                                       self.place.id]
-                         ))
+        self.assertEqual(
+            data['properties']['url'],
+            'http://testserver' +
+                reverse(
+                    'place-detail',
+                    args=[self.owner.username, self.dataset.slug, self.place.id]
+                )
+        )
 
         # Check that the submission sets look right
         self.assertEqual(len(data['properties']['submission_sets']), 2)
@@ -1152,10 +1154,14 @@ class TestPlaceListView (APITestMixin, TestCase):
         self.dataset.indexes.add(DataIndex(attr_name='foo'))
 
         from  sa_api_v2.models.core import GeoSubmittedThingQuerySet
+        from django.core import cache
         with mock.patch.object(GeoSubmittedThingQuerySet, 'filter_by_index') as patched_filter:
-            request = self.factory.get(self.path + '?foo=bar')
-            self.view(request, **self.request_kwargs)
-            self.assertEqual(patched_filter.call_count, 1)
+            # We patch django's caching here because otherwise we attempt to save
+            # the filter mock to the cache, which requires pickleability.
+            with mock.patch.object(cache, 'cache'):
+                request = self.factory.get(self.path + '?foo=bar')
+                self.view(request, **self.request_kwargs)
+                self.assertEqual(patched_filter.call_count, 1)
 
     def test_GET_unindexed_response(self):
         Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)', data=json.dumps({'foo': 'bar', 'name': 1})),
@@ -3814,7 +3820,134 @@ class TestDataSetListView (APITestMixin, TestCase):
         self.assertEqual(data['results'][0]['submission_sets']['likes']['length'], 4)
 
 
-class TestPlaceAttachmentListView (APITestMixin, TestCase):
+class TestAdminDataSetListView (APITestMixin, TestCase):
+    def setUp(self):
+        cache_buffer.reset()
+        django_cache.clear()
+
+        self.owner_password = '123'
+        self.owner = User.objects.create_superuser(
+            username='aaron',
+            password=self.owner_password,
+            email='abc@example.com')
+        self.submitter = User.objects.create_user(
+            username='mjumbe',
+            password='456',
+            email='123@example.com')
+        self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
+        self.place = Place.objects.create(
+          dataset=self.dataset,
+          geometry='POINT(2 3)',
+          submitter=self.submitter,
+          data=json.dumps({
+            'type': 'ATM',
+            'name': 'K-Mart',
+            'private-secrets': 42
+          }),
+        )
+        self.invisible_place = Place.objects.create(
+          dataset=self.dataset,
+          geometry='POINT(3 4)',
+          submitter=self.submitter,
+          visible=False,
+          data=json.dumps({
+            'type': 'ATM',
+            'name': 'Walmart',
+          }),
+        )
+        self.submissions = [
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"foo": 3}', visible=False),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}', visible=False),
+        ]
+        self.submission = self.submissions[0]
+
+        # These are mainly around to ensure that we don't get spillover from
+        # other datasets.
+        dataset2 = DataSet.objects.create(slug='ds2', owner=self.owner)
+        place2 = Place.objects.create(
+          dataset=dataset2,
+          geometry='POINT(3 4)',
+        )
+        submissions2 = [
+          Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+          Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"foo": 3}'),
+          Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"foo": 3}', visible=False),
+        ]
+
+        other_owner = User.objects.create_user(
+            username='frank',
+            password='789',
+            email='def@example.com')
+        dataset3 = DataSet.objects.create(owner=other_owner, slug='slug', display_name="Display Name")
+
+        self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
+
+        self.request_kwargs = {
+          'owner_username': self.owner.username,
+        }
+
+        self.factory = RequestFactory()
+        self.path = reverse('dataset-list', kwargs=self.request_kwargs)
+        self.view = AdminDataSetListView.as_view()
+
+    def tearDown(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        Submission.objects.all().delete()
+        ApiKey.objects.all().delete()
+
+        cache_buffer.reset()
+        django_cache.clear()
+
+    def test_anonymous_GET_response(self):
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was rejected -- not authenticated
+        self.assertStatusCode(response, 401)
+
+    def test_non_admin_GET_response(self):
+        request = self.factory.get(self.path)
+        request.user = self.submitter
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was rejected -- not authorized
+        self.assertStatusCode(response, 403)
+
+    def test_GET_response(self):
+        request = self.factory.get(self.path)
+        request.user = self.owner
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+
+        # Check that it's a results collection
+        self.assertIn('results', data)
+        self.assertIn('metadata', data)
+
+        # Check that the metadata looks right
+        self.assertIn('length', data['metadata'])
+        self.assertIn('next', data['metadata'])
+        self.assertIn('previous', data['metadata'])
+        self.assertIn('page', data['metadata'])
+
+        # Check that we have the right number of results
+        self.assertEqual(len(data['results']), 3)
+
+        self.assertEqual(data['results'][0]['url'],
+            'http://testserver' + reverse('dataset-detail', args=[
+                self.owner.username, self.dataset.slug]))
+
+
+class TestPlaceAttachmentListView (APITestMixin, TransactionTestCase):
     def setUp(self):
         cache_buffer.reset()
         django_cache.clear()
@@ -4119,7 +4252,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         self.assertStatusCode(response, 400)
 
 
-class TestSubmissionAttachmentListView (APITestMixin, TestCase):
+class TestSubmissionAttachmentListView (APITestMixin, TransactionTestCase):
     def setUp(self):
         cache_buffer.reset()
         django_cache.clear()

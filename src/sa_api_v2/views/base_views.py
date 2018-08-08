@@ -465,15 +465,12 @@ class CorsEnabledMixin (object):
 
         return response
 
-
 class FilteredResourceMixin (object):
     """
     A view mixin that filters queryset of ModelWithDataBlob results based on
     the URL query parameters.
     """
-    def get_queryset(self):
-        queryset = super(FilteredResourceMixin, self).get_queryset()
-
+    def filter_queryset(self, queryset):
         # Filter by any provided primary keys
         pk_list = self.kwargs.get('pk_list', None)
         if pk_list is not None:
@@ -521,9 +518,7 @@ class LocatedResourceMixin (object):
     A view mixin that orders queryset results by distance from a geometry, if
     requested.
     """
-    def get_queryset(self):
-        queryset = super(LocatedResourceMixin, self).get_queryset()
-
+    def locate_queryset(self, queryset):
         if NEAR_PARAM in self.request.GET:
             try:
                 reference = utils.to_geom(self.request.GET[NEAR_PARAM])
@@ -822,8 +817,8 @@ class Sanitizer(object):
         ]
 
         for field_name, value in obj.iteritems():
-            if field_name in field_whitelist:
-                return
+            if field_name in field_whitelist or value is None:
+                continue
             if type(value) is list:
                 for i in range(len(value)):
                     value[i] = bleach.clean(
@@ -843,7 +838,7 @@ class Sanitizer(object):
                         attributes=attribute_whitelist,
                         styles=styles_whitelist
                     )
-            else:
+            elif type(value) is str:
                 obj[field_name] = bleach.clean(
                     value,
                     strip=True,
@@ -957,7 +952,7 @@ class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, O
 
     # Override update() here to support HTML sanitization
     def update(self, request, *args, **kwargs):
-        Sanitizer.sanitize(self, request.DATA)
+        Sanitizer.sanitize(self, request.data)
 
         partial = kwargs.pop('partial', False)
         self.object = self.get_object_or_none()
@@ -971,23 +966,25 @@ class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, O
             save_kwargs = {'force_update': True}
             success_status_code = status.HTTP_200_OK
 
-        serializer = self.get_serializer(self.object, data=request.DATA,
-                                         files=request.FILES, partial=partial)
+        serializer = self.get_serializer(self.object, data=request.data, partial=partial)
 
         if serializer.is_valid():
-            try:
-                self.pre_save(serializer.object)
-            except ValidationError as err:
-                # full_clean on model instance may be called in pre_save, so we
-                # have to handle eventual errors.
-                return Response(err.message_dict, status=status.HTTP_400_BAD_REQUEST)
-            self.object = serializer.save(**save_kwargs)
-            self.post_save(self.object, created=created)
+            user = self.request.user
+            if serializer.instance is not None and serializer.instance.submitter is not None:
+                user = serializer.instance.submitter
+            if 'submitter' in serializer.validated_data:
+                user = serializer.validated_data['submitter']
+            self.object = serializer.save(
+                submitter=user if user is not None and user.is_authenticated() else None,
+                **save_kwargs
+            )
             return Response(serializer.data, status=success_status_code)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def get_object_or_404(self, pk):
+    def get_object_or_none(self, pk=None):
+        if pk is None:
+            pk = self.kwargs['place_id']
         try:
             return self.model.objects\
                 .filter(pk=pk)\
@@ -998,7 +995,13 @@ class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, O
                                   'attachments')\
                 .get()
         except self.model.DoesNotExist:
+            return None
+
+    def get_object_or_404(self, pk=None):
+        obj = self.get_object_or_none(pk)
+        if obj is None:
             raise Http404
+        return obj
 
     def get_object(self, queryset=None):
         place_id = self.kwargs['place_id']
@@ -1089,27 +1092,27 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
     ------------------------------------------------------------
     """
 
-    model = models.Place
     serializer_class = serializers.PlaceSerializer
-    # TODO: 'pagination_serializer_class' is deprecated;
-    # using 'pagination_class' instead.
-    # But we'll need to fix other parts of our views and tests as needed.
-    # (see: http://www.django-rest-framework.org/topics/3.1-announcement/)
-    # pagination_serializer_class = serializers.FeatureCollectionSerializer
-    pagination_class = serializers.FeatureCollectionSerializer
+    pagination_class = serializers.FeatureCollectionPagination
     renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
 
     # Overriding create so we can sanitize submitted fields, which may
     # contain raw HTML intended to be rendered in the client
     def create(self, request, *args, **kwargs):
-        Sanitizer.sanitize(self, request.DATA)
+        Sanitizer.sanitize(self, request.data)
 
-        serializer = self.get_serializer(data=request.DATA, files=request.FILES)
+        serializer = self.get_serializer(data=request.data)
 
         if serializer.is_valid():
-            self.pre_save(serializer.object)
-            self.object = serializer.save(force_insert=True)
+            user = self.request.user
+            if 'submitter' in serializer.validated_data:
+                user = serializer.validated_data['submitter']
+            self.object = serializer.save(
+                force_insert=True,
+                submitter=user if user is not None and user.is_authenticated() else None,
+                dataset=self.get_dataset()
+            )
             self.post_save(self.object, created=True)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED,
@@ -1123,13 +1126,7 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
         prefix = reverse('place-list', kwargs=metakey_kwargs)
         return prefix + '_keys'
 
-    def pre_save(self, obj):
-        super(PlaceListView, self).pre_save(obj)
-        obj.dataset = self.get_dataset()
-
     def post_save(self, obj, created):
-        super(PlaceListView, self).post_save(obj)
-
         # Get all place/add webhooks since we just added a place.
         if not created:
             return
@@ -1154,7 +1151,9 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
 
     def get_queryset(self):
         dataset = self.get_dataset()
-        queryset = super(PlaceListView, self).get_queryset()
+        queryset = self.locate_queryset(
+            self.filter_queryset(models.Place.objects.all())
+        )
 
         # If the user is not allowed to request invisible data then we won't
         # be here in the first place.
@@ -1187,15 +1186,6 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                 'submissions__attachments')
 
         return queryset
-
-    def get_serializer(self, instance=None, data=None, many=False, partial=False):
-        """
-        Override GenericAPIView.get_serializer to pass in allow_add_remove
-        """
-        serializer_class = self.get_serializer_class()
-        context = self.get_serializer_context()
-        kwargs = {'allow_add_remove': True} if many else {}
-        return serializer_class(instance, data=data, many=many, partial=partial, context=context, **kwargs)
 
     def trigger_webhooks(self, webhooks, obj):
         """
@@ -1242,7 +1232,7 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
 
             try:
                 email_field = email_template.recipient_email_field
-                recipient_email = self.request.DATA[email_field]
+                recipient_email = self.request.data[email_field]
                 logger.debug('[EMAIL] recipient_email: ' + recipient_email)
             except KeyError:
                 errors.append("No '%s' field found on the place. "
@@ -1421,7 +1411,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
 
     model = models.Submission
     serializer_class = serializers.SubmissionSerializer
-    pagination_serializer_class = serializers.PaginatedResultsSerializer
+    pagination_class = serializers.MetadataPagination
 
     place_id_kwarg = 'place_id'
     submission_set_name_kwarg = 'submission_set_name'
@@ -1437,17 +1427,23 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
         place = get_object_or_404(models.Place, dataset=dataset, id=place_id)
         return place
 
-    def pre_save(self, obj):
-        super(SubmissionListView, self).pre_save(obj)
-        obj.dataset = self.get_dataset()
-        obj.place = self.get_place(obj.dataset)
-        obj.set_name = self.kwargs[self.submission_set_name_kwarg]
+    def perform_create(self, serializer):
+        dataset = self.get_dataset()
+        user = self.request.user
+        if 'submitter' in serializer.validated_data and serializer.validated_data['submitter'] is not None:
+            user = serializer.validated_data['submitter']
+        serializer.save(
+            dataset=dataset,
+            place=self.get_place(dataset),
+            set_name=self.kwargs[self.submission_set_name_kwarg],
+            submitter=user if user.is_authenticated() else None,
+        )
 
     def get_queryset(self):
         dataset = self.get_dataset()
         place = self.get_place(dataset)
         submission_set_name = self.kwargs[self.submission_set_name_kwarg]
-        queryset = super(SubmissionListView, self).get_queryset()
+        queryset = self.filter_queryset(models.Submission.objects.all())
 
         if submission_set_name != 'submissions':
             queryset = queryset.filter(set_name=submission_set_name)
@@ -1464,7 +1460,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
             ids = [obj['id'] for obj in data if 'id' in obj]
             queryset = queryset.filter(pk__in=ids)
 
-        return queryset.filter(place=place)\
+        result = queryset.filter(place=place)\
             .select_related(
                 'dataset',
                 'dataset__owner',
@@ -1474,14 +1470,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
                 'submitter')\
             .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups')
 
-    def get_serializer(self, instance=None, data=None, many=False, partial=False):
-        """
-        Override GenericAPIView.get_serializer to pass in allow_add_remove
-        """
-        serializer_class = self.get_serializer_class()
-        context = self.get_serializer_context()
-        kwargs = {'allow_add_remove': True} if many else {}
-        return serializer_class(instance, data=data, many=many, partial=partial, context=context, **kwargs)
+        return result
 
 
 class DataSetSubmissionListView (CachedResourceMixin, ProtectedOwnedResourceMixin, FilteredResourceMixin, generics.ListAPIView):
@@ -1518,7 +1507,7 @@ class DataSetSubmissionListView (CachedResourceMixin, ProtectedOwnedResourceMixi
 
     model = models.Submission
     serializer_class = serializers.SubmissionSerializer
-    pagination_serializer_class = serializers.PaginatedResultsSerializer
+    pagination_class = serializers.MetadataPagination
 
     submission_set_name_kwarg = 'submission_set_name'
 
@@ -1531,7 +1520,7 @@ class DataSetSubmissionListView (CachedResourceMixin, ProtectedOwnedResourceMixi
     def get_queryset(self):
         dataset = self.get_dataset()
         submission_set_name = self.kwargs[self.submission_set_name_kwarg]
-        queryset = super(DataSetSubmissionListView, self).get_queryset()
+        queryset = self.filter_queryset(models.Submission.objects.all())
 
         if submission_set_name != 'submissions':
             queryset = queryset.filter(set_name=submission_set_name)
@@ -1684,7 +1673,7 @@ class DataSetListMixin (object):
 
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
-    pagination_serializer_class = serializers.PaginatedResultsSerializer
+    pagination_class = serializers.MetadataPagination
     authentication_classes = (authentication.BasicAuthentication, oauth2Authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
     always_allow_options = True
@@ -1757,20 +1746,16 @@ class DataSetListView (DataSetListMixin, ProtectedOwnedResourceMixin, generics.L
 
     client_authentication_classes = ()
 
-    def pre_save(self, obj):
-        super(DataSetListView, self).pre_save(obj)
-        obj.owner = self.get_owner()
-
-    def post_save(self, obj, created=False):
-        # Automatically create a new api key for a new dataset
-        obj.keys.create(
-            dataset=obj,
+    def perform_create(self, serializer):
+        serializer.save(owner=self.get_owner())
+        serializer.instance.keys.create(
+            dataset=serializer.data,
             key=apikey.models.generate_unique_api_key()
         )
 
     def get_queryset(self):
         owner = self.get_owner()
-        queryset = super(DataSetListView, self).get_queryset()
+        queryset = models.DataSet.objects.all()
         return queryset.filter(owner=owner).order_by('id')
 
     def create(self, request, owner_username):
@@ -1856,10 +1841,8 @@ class DataSetListView (DataSetListMixin, ProtectedOwnedResourceMixin, generics.L
             overrides['slug'] = unique_slug
 
         clone = original.clone(overrides=overrides, commit=False)
-        self.pre_save(clone)
         clone.save()
         tasks.clone_related_dataset_data.apply_async(args=[original.id, clone.id])
-        self.post_save(clone, created=True)
 
         serializer = self.get_serializer(instance=clone)
         headers = self.get_success_headers(serializer.data)
@@ -1886,6 +1869,7 @@ class AdminDataSetListView (CachedResourceMixin, DataSetListMixin, generics.List
     ------------------------------------------------------------
     """
 
+    queryset = models.DataSet.objects.all()
     permission_classes = (IsLoggedInAdmin,)
     content_negotiation_class = ShareaboutsContentNegotiation
 
@@ -1911,6 +1895,7 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
 
     model = models.Attachment
     serializer_class = serializers.AttachmentSerializer
+    pagination_class = serializers.MetadataPagination
 
     thing_id_kwarg = 'thing_id'
     submission_set_name_kwarg = 'submission_set_name'
@@ -1930,15 +1915,13 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
 
         return thing
 
+    def perform_create(self, serializer):
+        serializer.save(thing=self.get_thing())
+
     def get_queryset(self):
         thing = self.get_thing()
-        queryset = super(AttachmentListView, self).get_queryset()
+        queryset = self.filter_queryset(models.Attachment.objects.all())
         return queryset.filter(thing=thing)
-
-    def pre_save(self, obj):
-        super(AttachmentListView, self).pre_save(obj)
-        thing = self.get_thing()
-        obj.thing = thing
 
 
 class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIView):
@@ -1953,13 +1936,12 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
 
     ------------------------------------------------------------
     """
-    model = models.Action
     serializer_class = serializers.ActionSerializer
-    pagination_serializer_class = serializers.PaginatedResultsSerializer
+    pagination_class = serializers.MetadataPagination
 
     def get_queryset(self):
         dataset = self.get_dataset()
-        queryset = super(ActionListView, self).get_queryset()\
+        queryset = models.Action.objects.all()\
             .filter(thing__dataset=dataset)\
             .select_related(
                 'thing',
