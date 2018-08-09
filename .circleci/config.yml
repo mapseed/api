@@ -7,7 +7,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: smartercleanup/api:release-0.6.5
+      - image: mapseed/api:release-0.6.10
         environment:
           PASS: test1234
           USERNAME: testuser
@@ -40,7 +40,7 @@ jobs:
           # but DB is not yet ready
           name: Waiting for Postgres DB creation
           command: |
-            sleep 3
+            sleep 5
       - run:
           name: Migrate DB
           command: |
