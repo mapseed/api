@@ -337,6 +337,8 @@ class DataBlobProcessor (EmptyModelSerializer):
 
 
 class AttachmentSerializerMixin (EmptyModelSerializer, serializers.ModelSerializer):
+    url = AttachmentIdentityField()
+
     def to_native(self, obj):
         obj = self.ensure_obj(obj)
         data = {
@@ -349,9 +351,7 @@ class AttachmentSerializerMixin (EmptyModelSerializer, serializers.ModelSerializ
             'visible': obj.visible,
         }
         fields = self.get_fields()
-
-        if 'url' in fields:
-            data['url'] = fields['url'].field_to_native(obj, 'pk')
+        data['url'] = fields['url'].field_to_native(obj, 'pk')
 
         # Construct a SortedDictWithMetaData to get the browsable API form
         ret = self._dict_class(data)
@@ -460,9 +460,6 @@ class ShareaboutsUserDataStrategy (object):
 #
  
 class AttachmentListSerializer (AttachmentSerializerMixin):
-    file = AttachmentFileField()
-    url = AttachmentIdentityField()
-
     class Meta:
         model = models.Attachment
         exclude = ('thing', 'id')
