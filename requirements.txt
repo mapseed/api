@@ -24,6 +24,8 @@ django-celery==3.1.17
 
 # DB Settings and Management
 psycopg2==2.6.1
+# Use this in development if postgresql >= 10 is installed on host machine:
+# psycopg2-binary==2.7.5
 psycogreen==1.0
 dj-database-url==0.4.1
 django-object-actions==0.8.0
