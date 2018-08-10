@@ -384,29 +384,11 @@ class DataBlobProcessor (EmptyModelSerializer):
 class AttachmentSerializerMixin (EmptyModelSerializer, serializers.ModelSerializer):
     url = AttachmentIdentityField()
 
-    def to_native(self, obj):
-        obj = self.ensure_obj(obj)
-        data = {
-            'id': obj.pk,
-            'created_datetime': obj.created_datetime,
-            'updated_datetime': obj.updated_datetime,
-            'file': obj.file.storage.url(obj.file.name),
-            'name': obj.name,
-            'type': obj.type,
-            'visible': obj.visible,
-        }
-        fields = self.get_fields()
-        data['url'] = fields['url'].field_to_native(obj, 'pk')
-
-        # Construct a SortedDictWithMetaData to get the browsable API form
-        ret = self._dict_class(data)
-        ret.fields = self._dict_class()
-        for field_name, field in fields.iteritems():
-            value = data[field_name]
-            ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
-
+    def to_representation(self, instance):
+        # add an 'id', which is the primary key
+        ret = super(AttachmentSerializerMixin, self).to_representation(instance)
+        ret['id'] = instance.pk
         return ret
-
 
 ###############################################################################
 #
@@ -512,7 +494,7 @@ class AttachmentListSerializer (AttachmentSerializerMixin):
 class AttachmentInstanceSerializer (AttachmentSerializerMixin):
     class Meta:
         model = models.Attachment
-        exclude = ('thing', 'file', 'id')
+        exclude = ('thing', 'id')
 
 class DataSetPermissionSerializer (serializers.ModelSerializer):
     class Meta:
@@ -692,7 +674,7 @@ class DataSetPlaceSetSummarySerializer (serializers.HyperlinkedModelSerializer):
         # This will currently do a query for every dataset, not a single query
         # for all datasets. Generally a bad idea, but not a huge problem
         # considering the number of datasets at the moment. In the future,
-        # we should perhaps use some kind of many_to_native function.
+        # we should perhaps use some kind of many_to_representation function.
 
         # if self.many:
         #     include_invisible = INCLUDE_INVISIBLE_PARAM in self.context['request'].GET
