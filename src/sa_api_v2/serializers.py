@@ -115,8 +115,8 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
 
         'dataset-detail': '/{owner_username}/datasets/{dataset_slug}',
         'user-detail': '/{owner_username}',
-        'dataset-submission-list':
-        '/{owner_username}/datasets/{dataset_slug}/{submission_set_name}',
+        'dataset-submission-list': '/{owner_username}/datasets/{dataset_slug}/{submission_set_name}',
+        'attachment-detail': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}/attachments/{attachment_id}',
     }
 
     try:
@@ -233,6 +233,11 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin,
 class PlaceIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id')
     view_name = 'place-detail'
+
+
+class AttachmentIdentityField (ShareaboutsIdentityField):
+    url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'attachment_id')
+    view_name = 'attachment-detail'
 
 
 class SubmissionSetIdentityField (ShareaboutsIdentityField):
@@ -376,6 +381,33 @@ class DataBlobProcessor (EmptyModelSerializer):
         return data
 
 
+class AttachmentSerializerMixin (EmptyModelSerializer, serializers.ModelSerializer):
+    url = AttachmentIdentityField()
+
+    def to_native(self, obj):
+        obj = self.ensure_obj(obj)
+        data = {
+            'id': obj.pk,
+            'created_datetime': obj.created_datetime,
+            'updated_datetime': obj.updated_datetime,
+            'file': obj.file.storage.url(obj.file.name),
+            'name': obj.name,
+            'type': obj.type,
+            'visible': obj.visible,
+        }
+        fields = self.get_fields()
+        data['url'] = fields['url'].field_to_native(obj, 'pk')
+
+        # Construct a SortedDictWithMetaData to get the browsable API form
+        ret = self._dict_class(data)
+        ret.fields = self._dict_class()
+        for field_name, field in fields.iteritems():
+            value = data[field_name]
+            ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
+
+        return ret
+
+
 ###############################################################################
 #
 # User Data Strategies
@@ -471,39 +503,16 @@ class ShareaboutsUserDataStrategy (object):
 #    hyperlinked serializer. This is more useful for bulk data dumps where all
 #    of the related data is included in a package.
 #
-
-
-class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
-    file = AttachmentFileField()
-
+ 
+class AttachmentListSerializer (AttachmentSerializerMixin):
     class Meta:
         model = models.Attachment
-        exclude = ('id', 'thing',)
+        exclude = ('thing', 'id')
 
-    # TODO: We may need to re-implement this if want support for serving HTML
-    # in the browseable api form
-    # def to_representation(self, obj):
-    #     obj = self.ensure_obj(obj)
-    #     data = {
-    #         'created_datetime': obj.created_datetime,
-    #         'updated_datetime': obj.updated_datetime,
-    #         'file': obj.file.storage.url(obj.file.name),
-    #         'name': obj.name,
-    #         'type': obj.type,
-    #     }
-    #     fields = self.get_fields()
-
-    #     # Construct a ReturnDict (a subclass of collections.OrderedDict)
-    #     # to get the browsable API form
-    #     ret = self._dict_class(data)
-    #     # ret = super(AttachmentSerializer,
-    #     #             self).to_representation(self.instance)
-    #     ret.fields = self._dict_class()
-    #     for field_name, field in fields.iteritems():
-    #         value = data[field_name]
-    #         ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
-    #     return ret
-
+class AttachmentInstanceSerializer (AttachmentSerializerMixin):
+    class Meta:
+        model = models.Attachment
+        exclude = ('thing', 'file', 'id')
 
 class DataSetPermissionSerializer (serializers.ModelSerializer):
     class Meta:
@@ -764,7 +773,7 @@ class SubmittedThingSerializer (ActivityGenerator, DataBlobProcessor):
 class BasePlaceSerializer (SubmittedThingSerializer,
                            serializers.ModelSerializer):
     geometry = GeometryField(format='wkt')
-    attachments = AttachmentSerializer(read_only=True, many=True)
+    attachments = AttachmentListSerializer(read_only=True, many=True)
     submitter = SimpleUserSerializer(required=False, allow_null=True)
 
     class Meta:
@@ -839,7 +848,7 @@ class BasePlaceSerializer (SubmittedThingSerializer,
         return details
 
     def attachments_to_native(self, obj):
-        return [AttachmentSerializer(a).data for a in obj.attachments.all()]
+        return [AttachmentListSerializer(a, context=self.context).data for a in obj.attachments.filter(visible=True)]
 
     def submitter_to_native(self, obj):
         return SimpleUserSerializer(obj.submitter).data if obj.submitter else None
@@ -943,7 +952,7 @@ class PlaceSerializer (BasePlaceSerializer,
 # Submission serializers
 class BaseSubmissionSerializer (SubmittedThingSerializer, serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
-    attachments = AttachmentSerializer(read_only=True, many=True)
+    attachments = AttachmentListSerializer(read_only=True, many=True)
     submitter = SimpleUserSerializer(required=False, allow_null=True)
 
     class Meta:

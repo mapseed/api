@@ -334,6 +334,7 @@ class Attachment (CacheClearingModel, TimeStampedModel):
     file = models.FileField(upload_to=timestamp_filename, storage=AttachmentStorage())
     name = models.CharField(max_length=128, null=True, blank=True)
     thing = models.ForeignKey('SubmittedThing', related_name='attachments')
+    visible = models.BooleanField(default=True, blank=True, db_index=True)
 
     COVER = 'CO'
     RICH_TEXT = 'RT'

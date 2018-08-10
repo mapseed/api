@@ -12,6 +12,11 @@ urlpatterns = patterns('sa_api_v2',
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<thing_id>\d+)/attachments$',
         views.AttachmentListView.as_view(),
         name='place-attachments'),
+
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/attachments/(?P<attachment_id>\d+)$',
+        views.AttachmentInstanceView.as_view(),
+        name='attachment-detail'),
+
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)/(?P<thing_id>\d+)/attachments$',
         views.AttachmentListView.as_view(),
         name='submission-attachments'),

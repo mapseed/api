@@ -522,7 +522,9 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.place.id>);
         #
-        with self.assertNumQueries(11):
+
+        # TODO: https://github.com/mapseed/api/issues/137
+        with self.assertNumQueries(15):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -582,7 +584,9 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.place.id>);
         #
-        with self.assertNumQueries(11):
+
+        # TODO: https://github.com/mapseed/api/issues/137
+        with self.assertNumQueries(15):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -639,7 +643,9 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.place.id>);
         #
-        with self.assertNumQueries(16):
+
+        # TODO: https://github.com/mapseed/api/issues/137
+        with self.assertNumQueries(24):
             response = self.view(anon_request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
             response = self.view(auth_request, **self.request_kwargs)
@@ -1776,7 +1782,9 @@ class TestPlaceListView (APITestMixin, TestCase):
         # SELECT * FROM att WHERE thing_id IN <place ids>
         #
         request = factory.get(path)
-        with self.assertNumQueries(12):
+
+        # TODO: https://github.com/mapseed/api/issues/137
+        with self.assertNumQueries(17):
             view(request, **request_kwargs)
 
         # Second call should hardly hit the database
@@ -1795,7 +1803,9 @@ class TestPlaceListView (APITestMixin, TestCase):
 
         # Run same queries as above (except for permissions)
         request = factory.get(path)
-        with self.assertNumQueries(6):
+
+        # TODO: https://github.com/mapseed/api/issues/137
+        with self.assertNumQueries(11):
             view(request, **request_kwargs)
 
 

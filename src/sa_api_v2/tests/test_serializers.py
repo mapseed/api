@@ -7,14 +7,14 @@ from django.core.urlresolvers import reverse
 from nose.tools import istest
 from sa_api_v2.cache import cache_buffer
 from sa_api_v2.models import Attachment, Action, User, DataSet, Place, Submission, Group
-from sa_api_v2.serializers import AttachmentSerializer, ActionSerializer, UserSerializer, FullUserSerializer, PlaceSerializer, DataSetSerializer, SubmissionSerializer
+from sa_api_v2.serializers import AttachmentListSerializer, AttachmentInstanceSerializer, ActionSerializer, UserSerializer, FullUserSerializer, PlaceSerializer, DataSetSerializer, SubmissionSerializer
 from social.apps.django_app.default.models import UserSocialAuth
 import json
 from os import path
 from mock import patch
 
 
-class TestAttachmentSerializer (TestCase):
+class TestAttachmentListSerializer (TestCase):
 
     def setUp(self):
         f = ContentFile('this is a test')
@@ -22,8 +22,7 @@ class TestAttachmentSerializer (TestCase):
         self.attachment_model = Attachment(name='my_file', file=f, type='RT')
 
     def test_attributes(self):
-        serializer = AttachmentSerializer(self.attachment_model)
-        self.assertNotIn('id', serializer.data)
+        serializer = AttachmentListSerializer(self.attachment_model)
         self.assertNotIn('thing', serializer.data)
 
         self.assertIn('created_datetime', serializer.data)
@@ -31,9 +30,34 @@ class TestAttachmentSerializer (TestCase):
         self.assertIn('file', serializer.data)
         self.assertIn('name', serializer.data)
         self.assertIn('type', serializer.data)
+        self.assertIn('id', serializer.data)
 
     def test_can_serlialize_a_null_instance(self):
-        serializer = AttachmentSerializer(None)
+        serializer = AttachmentListSerializer(None)
+        data = serializer.data
+        self.assertIsInstance(data, dict)
+
+
+class TestAttachmentInstanceSerializer (TestCase):
+
+    def setUp(self):
+        f = ContentFile('this is a test')
+        f.name = 'my_file.txt'
+        self.attachment_model = Attachment(name='my_file', file=f, type='RT')
+
+    def test_attributes(self):
+        serializer = AttachmentInstanceSerializer(self.attachment_model)
+        self.assertNotIn('thing', serializer.data)
+
+        self.assertIn('created_datetime', serializer.data)
+        self.assertIn('updated_datetime', serializer.data)
+        self.assertIn('file', serializer.data)
+        self.assertIn('name', serializer.data)
+        self.assertIn('type', serializer.data)
+        self.assertIn('id', serializer.data)
+
+    def test_can_serlialize_a_null_instance(self):
+        serializer = AttachmentInstanceSerializer(None)
         data = serializer.data
         self.assertIsInstance(data, dict)
 
