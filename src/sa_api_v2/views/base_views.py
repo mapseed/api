@@ -1914,8 +1914,8 @@ class AttachmentInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpda
 
     def partial_update(self, *args, **kwargs):
         attachment_id = self.kwargs['attachment_id']
-        obj = self.get_object_or_404(attachment_id)
-        self.model.clear_instance_cache(obj)
+        attachment = self.get_object_or_404(attachment_id)
+        attachment.clear_instance_cache()
         return super(AttachmentInstanceView, self).partial_update(*args, **kwargs) 
 
     def get_object_or_404(self, pk):
