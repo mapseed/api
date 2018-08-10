@@ -9,7 +9,7 @@ import sa_api_v2.models.profiles
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('sa_api_v2', '0007_auto_20180420_2202'),
+        ('sa_api_v2', '0008_attachment_visible'),
     ]
 
     operations = [
