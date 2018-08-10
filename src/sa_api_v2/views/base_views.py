@@ -1891,6 +1891,48 @@ class AdminDataSetListView (CachedResourceMixin, DataSetListMixin, generics.List
     content_negotiation_class = ShareaboutsContentNegotiation
 
 
+class AttachmentInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpdateAPIView):
+    """
+
+    GET
+    ---
+    Get a particular attachment
+
+    **Authentication**: Basic, session, or key auth *(optional)*
+
+    PATCH
+    -----
+    Update an attachment's metadata, though not the attachment itself
+
+    **Authentication**: Basic, session, or key auth *(required)*
+
+    ------------------------------------------------------------
+    """
+    
+    model = models.Attachment
+    serializer_class = serializers.AttachmentInstanceSerializer
+
+    def partial_update(self, *args, **kwargs):
+        attachment_id = self.kwargs['attachment_id']
+        attachment = self.get_object_or_404(attachment_id)
+        attachment.clear_instance_cache()
+        return super(AttachmentInstanceView, self).partial_update(*args, **kwargs) 
+
+    def get_object_or_404(self, pk):
+        try:
+            return self.model.objects\
+                .filter(pk=pk)\
+                .get()
+        except self.model.DoesNotExist:
+            raise Http404
+
+    def get_object(self, queryset=None):
+        attachment_id = self.kwargs['attachment_id']
+        obj = self.get_object_or_404(attachment_id)
+        self.verify_object(obj)
+        return obj
+
+
 class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
     """
 
@@ -1902,7 +1944,6 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
 
     POST
     ----
-
     Attach a file to a place or submission
 
     **Authentication**: Basic, session, or key auth *(required)*
@@ -1911,7 +1952,7 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
     """
 
     model = models.Attachment
-    serializer_class = serializers.AttachmentSerializer
+    serializer_class = serializers.AttachmentListSerializer
 
     thing_id_kwarg = 'thing_id'
     submission_set_name_kwarg = 'submission_set_name'
