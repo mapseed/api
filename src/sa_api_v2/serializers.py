@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError
 from django.utils.http import urlquote_plus
 from rest_framework import pagination, serializers, fields
 from rest_framework.response import Response
-# from rest_framework.reverse import reverse
+from rest_framework.reverse import reverse
 
 from . import apikey
 from . import cors
@@ -172,6 +172,18 @@ class ShareaboutsRelatedField (ShareaboutsFieldMixin,
 class DataSetRelatedField (ShareaboutsRelatedField):
     view_name = 'dataset-detail'
     url_arg_names = ('owner_username', 'dataset_slug')
+
+    def get_url(self, obj, request):
+        url_kwargs = {
+            'owner_username': obj.owner.username,
+            'dataset_slug': obj.slug,
+        }
+        return reverse('dataset-detail', kwargs=url_kwargs, request=request)
+
+    def get_object(self, view_name, view_args, view_kwargs):
+        print("DataSetRelatedField.get_object:", view_kwargs)
+
+        return self.get_queryset().get(display_name='mw', owner__username='smartercleanup')
 
 
 class DataSetKeysRelatedField (ShareaboutsRelatedField):
@@ -839,10 +851,12 @@ class BasePlaceSerializer (SubmittedThingSerializer,
         obj = self.ensure_obj(obj)
         fields = self.get_fields()
 
+        request = self.context.get('request', None)
+
         data = {
             'id': obj.pk,  # = serializers.PrimaryKeyRelatedField(read_only=True)
             'geometry': str(obj.geometry or 'POINT(0 0)'),  # = GeometryField(format='wkt')
-            'dataset': obj.dataset_id,  # = DataSetRelatedField()
+            'dataset': fields['dataset'].get_url(obj.dataset, request),
             'attachments': self.attachments_to_native(obj),  # = AttachmentSerializer(read_only=True)
             'submitter': self.submitter_to_native(obj),
             'data': obj.data,
@@ -906,7 +920,7 @@ class PlaceSerializer (BasePlaceSerializer,
                        serializers.HyperlinkedModelSerializer):
     id = serializers.IntegerField(required=False)
     url = PlaceIdentityField()
-    dataset = DataSetRelatedField(queryset=models.Place.objects.all(), required=False)
+    dataset = DataSetRelatedField(queryset=models.DataSet.objects.all(), required=False)
     submitter = UserSerializer(required=False, allow_null=True)
 
     class Meta (BasePlaceSerializer.Meta):
