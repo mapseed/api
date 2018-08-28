@@ -181,9 +181,11 @@ class DataSetRelatedField (ShareaboutsRelatedField):
         return reverse('dataset-detail', kwargs=url_kwargs, request=request)
 
     def get_object(self, view_name, view_args, view_kwargs):
-        print("DataSetRelatedField.get_object:", view_kwargs)
-
-        return self.get_queryset().get(display_name='mw', owner__username='smartercleanup')
+        lookup_kwargs = {
+            'display_name': view_kwargs['dataset_slug'],
+            'owner__username': view_kwargs['owner_username'],
+        }
+        return self.get_queryset().get(**lookup_kwargs)
 
 
 class DataSetKeysRelatedField (ShareaboutsRelatedField):
