@@ -702,13 +702,13 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
 
     def test_PUT_response_as_owner(self):
         place_data = json.dumps({
-          'type': 'Feature',
-          'properties': {
-            'type': 'Park Bench',
-            'private-secrets': 'The mayor loves this bench',
-            'submitter': None
-          },
-          'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
+            'type': 'Feature',
+            'properties': {
+                'type': 'Park Bench',
+                'private-secrets': 'The mayor loves this bench',
+                'submitter': None,
+            },
+            'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
         })
 
         #
