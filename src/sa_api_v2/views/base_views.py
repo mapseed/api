@@ -805,7 +805,7 @@ class EmailTemplateMixin(object):
         # disabling email notifications for Supports. Otherwise, there
         # is no way to have an EmailTemplate trigger on only Place and
         # Comment submissions.
-        if submission_set_name == 'support':
+        if submission_set_name not in ['comments', 'places']:
             return
 
         request_origin = self.request.META.get('HTTP_ORIGIN', '')
