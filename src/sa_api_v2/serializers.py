@@ -560,7 +560,7 @@ class SimpleGroupSerializer (BaseGroupSerializer):
 
 
 class GroupSerializer (BaseGroupSerializer):
-    dataset = DataSetRelatedField(queryset=models.Group.objects.all())
+    dataset = DataSetRelatedField(queryset=models.DataSet.objects.all())
 
     class Meta (BaseGroupSerializer.Meta):
         pass
@@ -989,7 +989,7 @@ class SubmissionSerializer (BaseSubmissionSerializer,
                             serializers.HyperlinkedModelSerializer):
     id = serializers.IntegerField(required=False)
     url = SubmissionIdentityField()
-    dataset = DataSetRelatedField(queryset=models.Submission.objects.all(), required=False)
+    dataset = DataSetRelatedField(queryset=models.DataSet.objects.all(), required=False)
     set = SubmissionSetRelatedField(source='*', required=False)
     place = PlaceRelatedField(required=False)
     submitter = UserSerializer(required=False, allow_null=True)
