@@ -207,6 +207,7 @@ class Webhook (TimeStampedModel):
         return 'On %s data in %s' % (self.event, self.submission_set)
 
 
+# TODO: rename this to SubmissionEmailTemplate
 class PlaceEmailTemplate (TimeStampedModel):
     """
     A Place Email is a user-defined email to be sent to the submitter of
@@ -219,9 +220,9 @@ class PlaceEmailTemplate (TimeStampedModel):
     submission_set = models.CharField(
         max_length=128,
         blank=True,
-        help_text='Either the name of a submission set \
-        (e.g., "comments"), or "places". Leave blank to \
-        refer to all things.'
+        help_text='The name of a submission set \
+        (e.g., "comments", "places", "support"). Leave blank to \
+        refer to all submission sets.'
     )
     event = models.CharField(max_length=128, choices=EVENT_CHOICES, default='add')
     recipient_email_field = models.CharField(max_length=128)
