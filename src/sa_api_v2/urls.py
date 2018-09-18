@@ -54,6 +54,12 @@ urlpatterns = patterns('sa_api_v2',
         views.PlaceListView.as_view(),
         name='place-list'),
 
+    # HACK: Adding this route so that the downloaded file has the `.csv` extension:
+    # https://github.com/mapseed/api/issues/139
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/mapseed-places.csv',
+        views.PlaceListView.as_view(),
+        name='place-list'),
+
     url(r'^~/datasets$',
         views.AdminDataSetListView.as_view(),
         name='admin-dataset-list'),
