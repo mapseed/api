@@ -203,12 +203,17 @@ class PlaceRelatedField (ShareaboutsRelatedField):
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id')
     queryset = models.Place.objects.all()
 
+    def get_object(self, view_name, view_args, view_kwargs):
+        lookup_kwargs = {
+            'id': view_kwargs['place_id'],
+        }
+        return self.get_queryset().get(**lookup_kwargs)
+
 
 class SubmissionSetRelatedField (ShareaboutsRelatedField):
     view_name = 'submission-list'
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id',
                      'submission_set_name')
-    queryset = models.Submission.objects.all()
 
 
 class ShareaboutsIdentityField (ShareaboutsFieldMixin,
@@ -990,7 +995,7 @@ class SubmissionSerializer (BaseSubmissionSerializer,
     id = serializers.IntegerField(required=False)
     url = SubmissionIdentityField()
     dataset = DataSetRelatedField(queryset=models.DataSet.objects.all(), required=False)
-    set = SubmissionSetRelatedField(source='*', required=False)
+    set = SubmissionSetRelatedField(source='*', required=False, read_only=True)
     place = PlaceRelatedField(required=False)
     submitter = UserSerializer(required=False, allow_null=True)
 
