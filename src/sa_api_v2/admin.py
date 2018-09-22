@@ -233,7 +233,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
     prepopulated_fields = {'slug': ['display_name']}
     search_fields = ('display_name', 'slug', 'owner__username')
 
-    objectactions = ('clone_dataset', 'clear_cache')
+    change_actions = ('clone_dataset', 'clear_cache')
     raw_id_fields = ('owner',)
     readonly_fields = ('api_path',)
     inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin, InlineWebhookAdmin]

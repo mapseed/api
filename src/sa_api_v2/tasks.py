@@ -247,10 +247,18 @@ def load_dataset_archive(dataset_id, archive_url):
 
                 serializer = SimplePlaceSerializer(data=place_data)
                 assert serializer.is_valid(), list_errors(serializer.errors)
-                place = serializer.object
-                place.dataset = dataset
-                place.submitter = get_or_create_user(submitter_data, users_map)
-                place.save(silent=True, reindex=False)
+                # Construct a request for the serializer context
+                r = RequestFactory().get('', data={})
+                r.get_dataset = lambda: dataset
+
+                # Render the data in each format
+                serializer.context['request'] = r
+                serializer.save(
+                    dataset=dataset,
+                    submitter=get_or_create_user(submitter_data, users_map),
+                    silent=True,
+                    reindex=False
+                )
 
                 for set_name, submissions_data in submission_sets_data.iteritems():
                     for submission_data in submissions_data:
@@ -276,4 +284,3 @@ def load_dataset_archive(dataset_id, archive_url):
             # Load meta-data like permissions and such
             # metadata = data.get('metadata')
             # for permission_data in metadata.get('permissions'):
-
