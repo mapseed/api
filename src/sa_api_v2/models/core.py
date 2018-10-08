@@ -85,6 +85,14 @@ class SubmittedThing (CloneableModelMixin, CacheClearingModel, ModelWithDataBlob
         return {'silent': True, 'reindex': False, 'clear_cache': False}
 
     def save(self, silent=False, source='', reindex=True, *args, **kwargs):
+        # HACK: this method is reading values from both kwargs and
+        # self attributes because the admin form is using kwargs while
+        # the serializers are using attributes to set these flags. We
+        # should find a way to make both of these approaches use the
+        # same api - ideally kwargs.
+        silent = getattr(self, 'silent', silent)
+        source = getattr(self, 'source', source)
+        reindex = getattr(self, 'reindex', reindex)
         is_new = (self.id == None)
 
         ret = super(SubmittedThing, self).save(*args, **kwargs)
