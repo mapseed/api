@@ -4,7 +4,7 @@
 ############################################################
 
 # Set the base image to Debian
-FROM buildpack-deps:jessie
+FROM python:2.7.15-stretch
 
 # File Author / Maintainer
 MAINTAINER Luke Swart <luke@smartercleanup.org>
@@ -19,10 +19,10 @@ RUN apt-get install -y tar git curl wget dialog net-tools build-essential gettex
 RUN apt-get install -y python-dev python-distribute python-pip
 
 # Install Postgres/PostGIS dependencies:
-RUN apt-get install -y python-psycopg2 postgresql libpq-dev postgresql-9.4-postgis-2.1 postgis postgresql-9.4
+RUN apt-get install -y python-psycopg2 postgresql libpq-dev postgresql-9.6-postgis-2.3 postgis postgresql-9.6
 
 # If you want to deploy from an online host git repository, you can use the following command to clone:
-RUN git clone https://github.com/mapseed/api.git && cd api && git checkout 1.0.1 && cd -
+RUN git clone https://github.com/mapseed/api.git && cd api && git checkout 1.0.2 && cd -
 # # for local testing, cd into project root and uncomment this line:
 # ADD . api
 
