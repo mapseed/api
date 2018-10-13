@@ -38,7 +38,10 @@ SITE_ID = 1
 # How long to keep api cache values. Since the api will invalidate the cache
 # automatically when appropriate, this can (and should) be set to something
 # large.
-API_CACHE_TIMEOUT = 3600  # an hour
+# NOTE(goldpbear): We have disabled caching for now, pending a further
+# investigation into its effects on newly-created places and comments.
+# See: https://github.com/jalMogo/mgmt/issues/112
+API_CACHE_TIMEOUT = 1
 
 # Where should the user be redirected to when they visit the root of the site?
 ROOT_REDIRECT_TO = 'api-root'

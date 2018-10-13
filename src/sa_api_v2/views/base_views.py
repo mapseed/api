@@ -15,7 +15,6 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import (views, permissions, mixins, authentication,
                             generics, exceptions, status)
 from oauth2_provider.ext.rest_framework import authentication as oauth2Authentication
-from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
@@ -36,6 +35,7 @@ from .. import apikey
 from .. import cors
 from .. import tasks
 from .. import utils
+from .content_negotiation import ShareaboutsContentNegotiation
 from ..cache import cache_buffer
 from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, BBOX_PARAM,
@@ -52,49 +52,6 @@ import logging
 import bleach
 
 logger = logging.getLogger('sa_api_v2.views')
-
-
-###############################################################################
-#
-# Content Negotiation
-# -------------------
-#
-
-
-class JSONPCallbackNegotiation (DefaultContentNegotiation):
-    """
-    If the request has a 'callback' querystring parameter then we shouldn't
-    have to specify format=jsonp; it should be implied.
-    """
-
-    def select_renderer(self, request, renderers, format_suffix=None):
-        if 'callback' in request.query_params:
-            format_suffix = 'jsonp'
-        return super(JSONPCallbackNegotiation, self).select_renderer(request, renderers, format_suffix)
-
-
-class XDomainRequestCompatNegotiation (DefaultContentNegotiation):
-    """
-    In IE 8 and 9 CORS is supported with the XDomainRequest object. However,
-    POST requests will only be sent with a content-type header of text/plain.
-    In this case, we just want to "correct" this to be JSON.
-    """
-
-    def select_parser(self, request, parsers):
-        # For cross-origin requests (with an Origin header), if we get a plain
-        # text content type (or no content type at all), then assume we are
-        # dealing with an XDomainRequest and the content should be JSON.
-        if 'HTTP_ORIGIN' in request.META and request.META.get('CONTENT_TYPE', '') in ('text/plain', ''):
-            request.META['CONTENT_TYPE'] = 'application/json'
-
-            # Also set this semi-hidden variable on the request, as it has
-            # already been set and needs to be calculated again.
-            request._content_type = 'application/json'
-        return super(XDomainRequestCompatNegotiation, self).select_parser(request, parsers)
-
-
-class ShareaboutsContentNegotiation (JSONPCallbackNegotiation, XDomainRequestCompatNegotiation):
-    pass
 
 
 ###############################################################################
