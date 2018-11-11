@@ -135,7 +135,7 @@ class DataSet (CloneableModelMixin, CacheClearingModel, models.Model):
     @property
     def places(self):
         if not hasattr(self, '_places'):
-            self._places = Place.objects.filter(dataset=self)
+            self._places = PlaceSubmittedThing.objects.filter(dataset=self)
         return self._places
 
     @property
@@ -169,8 +169,8 @@ class DataSet (CloneableModelMixin, CacheClearingModel, models.Model):
         # Clone all the places. Submissions will be cloned as part of the
         # places.
         for thing in self.things.all():
-            try: place = thing.place
-            except Place.DoesNotExist: continue
+            try: place = thing.placesubmittedthing
+            except PlaceSubmittedThing.DoesNotExist: continue
             if place:
                 place.clone(overrides={'dataset': onto})
 
@@ -261,7 +261,7 @@ class GeoSubmittedThingManager (models.GeoManager, SubmittedThingManager):
         return GeoSubmittedThingQuerySet(self.model, using=self._db)
 
 
-class Place (SubmittedThing):
+class PlaceSubmittedThing (SubmittedThing):
     """
     A Place is a submitted thing with some geographic information, to which
     other submissions such as comments or surveys can be attached.
@@ -277,6 +277,7 @@ class Place (SubmittedThing):
         app_label = 'sa_api_v2'
         db_table = 'sa_api_place'
         ordering = ['-updated_datetime']
+        verbose_name = "place"
 
     def clone_related(self, onto):
         data_overrides = {'place': onto, 'dataset': onto.dataset}
@@ -293,7 +294,7 @@ class Submission (SubmittedThing):
     It belongs to a Place.
     Used for representing eg. comments, votes, ...
     """
-    place = models.ForeignKey(Place, related_name='submissions')
+    place = models.ForeignKey(PlaceSubmittedThing, related_name='submissions')
     set_name = models.TextField(db_index=True)
 
     objects = SubmittedThingManager()

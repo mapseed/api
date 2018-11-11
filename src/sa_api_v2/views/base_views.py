@@ -32,7 +32,8 @@ from .. import utils
 from .. import renderers
 from .. import parsers
 from .. import apikey
-from .. import cors
+from ..cors.auth import OriginAuthentication
+from ..apikey.auth import ApiKeyAuthentication
 from .. import tasks
 from .. import utils
 from .content_negotiation import ShareaboutsContentNegotiation
@@ -323,7 +324,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     parser_classes = (JSONParser, FormParser, MultiPartParser)
     permission_classes = (IsAdminOwnerOrReadOnly, IsAllowedByDataPermissions)
     authentication_classes = (authentication.BasicAuthentication, oauth2Authentication.OAuth2Authentication, ShareaboutsSessionAuth)
-    client_authentication_classes = (apikey.auth.ApiKeyAuthentication, cors.auth.OriginAuthentication)
+    client_authentication_classes = (ApiKeyAuthentication, OriginAuthentication)
     content_negotiation_class = ShareaboutsContentNegotiation
 
     owner_username_kwarg = 'owner_username'
@@ -815,7 +816,7 @@ class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, O
     ------------------------------------------------------------
     """
 
-    model = models.Place
+    model = models.PlaceSubmittedThing
     serializer_class = serializers.PlaceSerializer
     renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
@@ -1011,7 +1012,7 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
     def get_queryset(self):
         dataset = self.get_dataset()
         queryset = self.locate_queryset(
-            self.filter_queryset(models.Place.objects.all())
+            self.filter_queryset(models.PlaceSubmittedThing.objects.all())
         )
 
         # If the user is not allowed to request invisible data then we won't
@@ -1194,7 +1195,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
 
     def get_place(self, dataset):
         place_id = self.kwargs[self.place_id_kwarg]
-        place = get_object_or_404(models.Place, dataset=dataset, id=place_id)
+        place = get_object_or_404(models.PlaceSubmittedThing, dataset=dataset, id=place_id)
         return place
 
     def perform_create(self, serializer):
@@ -1722,7 +1723,7 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
             ObjType = models.Submission
         else:
             obj = thing.place
-            ObjType = models.Place
+            ObjType = models.PlaceSubmittedThing
         self.verify_object(obj, ObjType)
 
         return thing
@@ -1757,7 +1758,7 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
             .filter(thing__dataset=dataset)\
             .select_related(
                 'thing',
-                'thing__place',       # It will have this if it's a place
+                'thing__placesubmittedthing',       # It will have this if it's a place
                 'thing__submission',  # It will have this if it's a submission
                 'thing__submission__place',
                 'thing__submission__place__dataset',
@@ -1770,14 +1771,14 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
                 'thing__submitter___groups__dataset__owner',
                 'thing__submitter__social_auth',
 
-                'thing__place__attachments',
+                'thing__placesubmittedthing__attachments',
                 'thing__submission__attachments',
 
-                'thing__place__submissions')
+                'thing__placesubmittedthing__submissions')
 
         if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             queryset = queryset.filter(thing__visible=True)\
-                .filter(Q(thing__place__isnull=False) |
+                .filter(Q(thing__placesubmittedthing__isnull=False) |
                         Q(thing__submission__place__visible=True))
 
         return queryset
