@@ -201,7 +201,7 @@ class UserRelatedField (ShareaboutsRelatedField):
 class PlaceRelatedField (ShareaboutsRelatedField):
     view_name = 'place-detail'
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id')
-    queryset = models.Place.objects.all()
+    queryset = models.PlaceSubmittedThing.objects.all()
 
     def get_object(self, view_name, view_args, view_kwargs):
         lookup_kwargs = {
@@ -778,7 +778,7 @@ class BasePlaceSerializer (SubmittedThingSerializer,
     submitter = SimpleUserSerializer(required=False, allow_null=True)
 
     class Meta:
-        model = models.Place
+        model = models.PlaceSubmittedThing
 
     def get_submission_sets(self, place):
         include_invisible = self.is_flag_on(INCLUDE_INVISIBLE_PARAM)
@@ -1113,20 +1113,20 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
 
     def get_target_type(self, obj):
         try:
-            if obj.thing.place is not None:
-                return u'place'
-        except models.Place.DoesNotExist:
+            if obj.thing.placesubmittedthing is not None:
+                return u'placesubmittedthing'
+        except models.PlaceSubmittedThing.DoesNotExist:
             pass
 
         return obj.thing.submission.set_name
 
     def get_target(self, obj):
         try:
-            if obj.thing.place is not None:
-                serializer = PlaceSerializer(obj.thing.place, context=self.context)
+            if obj.thing.placesubmittedthing is not None:
+                serializer = PlaceSerializer(obj.thing.placesubmittedthing, context=self.context)
             else:
                 serializer = SubmissionSerializer(obj.thing.submission, context=self.context)
-        except models.Place.DoesNotExist:
+        except models.PlaceSubmittedThing.DoesNotExist:
             serializer = SubmissionSerializer(obj.thing.submission, context=self.context)
 
         return serializer.data

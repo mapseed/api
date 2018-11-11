@@ -19,6 +19,7 @@ from django_ace import AceWidget
 from django_object_actions import DjangoObjectActions
 from .apikey.models import ApiKey
 from .cors.models import Origin
+from .cors.admin import OriginAdmin
 from .tasks import clone_related_dataset_data
 
 
@@ -136,7 +137,7 @@ class InlineApiKeyAdmin(admin.StackedInline):
             return '(You must save your dataset before you can edit the permissions on your API key.)'
         else:
             return (
-                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:sa_api_v2_apikey_change', args=[instance.pk]))
+                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:apikey_apikey_change', args=[instance.pk]))
                 + self.permissions_list(instance)
             )
     edit_url.allow_tags = True
@@ -159,7 +160,7 @@ class InlineOriginAdmin(admin.StackedInline):
             return '(You must save your dataset before you can edit the permissions on your origin.)'
         else:
             return (
-                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:sa_api_v2_origin_change', args=[instance.pk]))
+                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:cors_origin_change', args=[instance.pk]))
                 + self.permissions_list(instance)
             )
     edit_url.allow_tags = True
@@ -290,7 +291,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
 
 
 class PlaceAdmin(SubmittedThingAdmin):
-    model = models.Place
+    model = models.PlaceSubmittedThing
 
     def api_path(self, instance):
         path = reverse('place-detail', args=[instance.dataset.owner, instance.dataset.slug, instance.id])
@@ -333,15 +334,16 @@ class ActionAdmin(admin.ModelAdmin):
         user = request.user
         if not user.is_superuser:
             qs = qs.filter(thing__dataset__owner=user)
-        return qs.select_related('thing', 'thing__place', 'thing__submitter')
+        return qs.select_related('thing', 'thing__placesubmittedthing', 'thing__submitter')
 
     def submitter_name(self, obj):
         return obj.submitter.username if obj.submitter else None
 
     def type_of_thing(self, obj):
-        if obj.thing.place:
-            return 'place'
-        else:
+        try:
+            if obj.thing.placesubmittedthing is not None:
+                return 'place'
+        except models.PlaceSubmittedThing.DoesNotExist:
             return 'submission'
 
 
@@ -394,7 +396,7 @@ class UserAdmin(BaseUserAdmin):
 
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.DataSet, DataSetAdmin)
-admin.site.register(models.Place, PlaceAdmin)
+admin.site.register(models.PlaceSubmittedThing, PlaceAdmin)
 admin.site.register(models.Submission, SubmissionAdmin)
 admin.site.register(models.Action, ActionAdmin)
 admin.site.register(models.Group, GroupAdmin)
