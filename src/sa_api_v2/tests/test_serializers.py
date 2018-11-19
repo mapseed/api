@@ -75,7 +75,7 @@ class TestActionSerializer (TestCase):
                                          owner_id=owner.id)
         place = Place.objects.create(dataset=dataset, geometry='POINT(2 3)')
         comment = Submission.objects.create(dataset=dataset,
-                                            place=place,
+                                            place_model=place,
                                             set_name='comments')
 
         self.place_action = Action.objects.create(
@@ -259,10 +259,10 @@ class TestPlaceSerializer (TestCase):
         self.place = Place.objects.create(dataset=self.dataset,
                                           geometry='POINT(2 3)')
         Submission.objects.create(dataset=self.dataset,
-                                  place=self.place,
+                                  place_model=self.place,
                                   set_name='comments')
         Submission.objects.create(dataset=self.dataset,
-                                  place=self.place,
+                                  place_model=self.place,
                                   set_name='comments')
 
     def test_can_serlialize_a_null_instance(self):
@@ -320,10 +320,10 @@ class TestDataSetSerializer (TestCase):
         self.place = Place.objects.create(dataset=self.dataset,
                                           geometry='POINT(2 3)')
         Submission.objects.create(dataset=self.dataset,
-                                  place=self.place,
+                                  place_model=self.place,
                                   set_name='comments')
         Submission.objects.create(dataset=self.dataset,
-                                  place=self.place,
+                                  place_model=self.place,
                                   set_name='comments')
 
     def test_can_serlialize_a_null_instance(self):

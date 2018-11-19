@@ -31,7 +31,6 @@ from .. import serializers
 from .. import utils
 from .. import renderers
 from .. import parsers
-from .. import apikey
 from ..cors.auth import OriginAuthentication
 from ..apikey.auth import ApiKeyAuthentication
 from .. import tasks
@@ -816,7 +815,7 @@ class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, O
     ------------------------------------------------------------
     """
 
-    model = models.PlaceSubmittedThing
+    model = models.Place
     serializer_class = serializers.PlaceSerializer
     renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
@@ -1012,7 +1011,7 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
     def get_queryset(self):
         dataset = self.get_dataset()
         queryset = self.locate_queryset(
-            self.filter_queryset(models.PlaceSubmittedThing.objects.all())
+            self.filter_queryset(models.Place.objects.all())
         )
 
         # If the user is not allowed to request invisible data then we won't
@@ -1125,9 +1124,9 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
                 .select_related(
                     'dataset',
                     'dataset__owner',
-                    'place',
-                    'place__dataset',
-                    'place__dataset__owner',
+                    'place_model',
+                    'place_model__dataset',
+                    'place_model__dataset__owner',
                     'submitter')\
                 .prefetch_related('attachments', 'submitter__social_auth')\
                 .get()
@@ -1193,9 +1192,9 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
         prefix = reverse('submission-list', kwargs=metakey_kwargs)
         return prefix + '_keys'
 
-    def get_place(self, dataset):
+    def get_place_model(self, dataset):
         place_id = self.kwargs[self.place_id_kwarg]
-        place = get_object_or_404(models.PlaceSubmittedThing, dataset=dataset, id=place_id)
+        place = get_object_or_404(models.Place, dataset=dataset, id=place_id)
         return place
 
     def perform_create(self, serializer):
@@ -1205,7 +1204,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
             user = serializer.validated_data['submitter']
         submission = serializer.save(
             dataset=dataset,
-            place=self.get_place(dataset),
+            place_model=self.get_place_model(dataset),
             set_name=self.kwargs[self.submission_set_name_kwarg],
             submitter=user if user.is_authenticated() else None,
         )
@@ -1213,7 +1212,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
 
     def get_queryset(self):
         dataset = self.get_dataset()
-        place = self.get_place(dataset)
+        place = self.get_place_model(dataset)
         submission_set_name = self.kwargs[self.submission_set_name_kwarg]
         queryset = self.filter_queryset(models.Submission.objects.all())
 
@@ -1232,13 +1231,13 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
             ids = [obj['id'] for obj in data if 'id' in obj]
             queryset = queryset.filter(pk__in=ids)
 
-        result = queryset.filter(place=place)\
+        result = queryset.filter(place_model=place)\
             .select_related(
                 'dataset',
                 'dataset__owner',
-                'place',
-                'place__dataset',
-                'place__dataset__owner',
+                'place_model',
+                'place_model__dataset',
+                'place_model__dataset__owner',
                 'submitter')\
             .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups')
 
@@ -1306,9 +1305,9 @@ class DataSetSubmissionListView (CachedResourceMixin, ProtectedOwnedResourceMixi
             .select_related(
                 'dataset',
                 'dataset__owner',
-                'place',
-                'place__dataset',
-                'place__dataset__owner',
+                'place_model',
+                'place_model__dataset',
+                'place_model__dataset__owner',
                 'submitter')\
             .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups')
 
@@ -1719,11 +1718,13 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
         thing = get_object_or_404(models.SubmittedThing, dataset=dataset, id=thing_id)
 
         if self.submission_set_name_kwarg in self.kwargs:
+            # the thing is a Submission
             obj = thing.submission
             ObjType = models.Submission
         else:
+            # the thing is a Place
             obj = thing.place
-            ObjType = models.PlaceSubmittedThing
+            ObjType = models.Place
         self.verify_object(obj, ObjType)
 
         return thing
@@ -1758,11 +1759,11 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
             .filter(thing__dataset=dataset)\
             .select_related(
                 'thing',
-                'thing__placesubmittedthing',       # It will have this if it's a place
+                'thing__place',       # It will have this if it's a place
                 'thing__submission',  # It will have this if it's a submission
-                'thing__submission__place',
-                'thing__submission__place__dataset',
-                'thing__submission__place__dataset__owner',
+                'thing__submission__place_model',
+                'thing__submission__place_model__dataset',
+                'thing__submission__place_model__dataset__owner',
 
                 'thing__submitter',
                 'thing__dataset',
@@ -1771,15 +1772,15 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
                 'thing__submitter___groups__dataset__owner',
                 'thing__submitter__social_auth',
 
-                'thing__placesubmittedthing__attachments',
+                'thing__place__attachments',
                 'thing__submission__attachments',
 
-                'thing__placesubmittedthing__submissions')
+                'thing__place__submissions')
 
         if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             queryset = queryset.filter(thing__visible=True)\
-                .filter(Q(thing__placesubmittedthing__isnull=False) |
-                        Q(thing__submission__place__visible=True))
+                .filter(Q(thing__place__isnull=False) |
+                        Q(thing__submission__place_model__visible=True))
 
         return queryset
 
@@ -1875,6 +1876,7 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
 
         login(request, user)
         user_url = reverse('user-detail', args=[user.username])
+        # use the absolute url for CORS protection:
         user_url = request.build_absolute_uri(user_url)
 
         # Is cross-origin?

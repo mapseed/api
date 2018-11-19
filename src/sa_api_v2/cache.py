@@ -430,7 +430,7 @@ class SubmissionCache (Cache):
 
     def get_instance_params(self, submission_obj):
         params = self.place_cache.get_cached_instance_params(
-            submission_obj.place_id, lambda: submission_obj.place).copy()
+            submission_obj.place_model_id, lambda: submission_obj.place_model).copy()
         params.update({
             'submission_set_name': submission_obj.set_name,
             'submission_id': submission_obj.pk,
@@ -440,25 +440,25 @@ class SubmissionCache (Cache):
         return params
 
     def get_other_keys(self, **params):
-        dataset_id, place_id, submission_set_name = map(params.get, ['dataset_id', 'place_id', 'submission_set_name'])
+        dataset_id, place_model_id, submission_set_name = map(params.get, ['dataset_id', 'place_id', 'submission_set_name'])
         dataset_serialized_data_keys = self.dataset_cache.get_serialized_data_keys(dataset_id)
-        place_serialized_data_keys = self.place_cache.get_serialized_data_keys(place_id)
+        place_serialized_data_keys = self.place_cache.get_serialized_data_keys(place_model_id)
         return dataset_serialized_data_keys | place_serialized_data_keys
 
     def get_request_prefixes(self, **params):
-        owner, dataset, place, submission_set_name, submission = map(params.get, ['owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id'])
+        owner, dataset, place_model, submission_set_name, submission = map(params.get, ['owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id'])
         prefixes = super(SubmissionCache, self).get_request_prefixes(**params)
 
         # TODO: it's pretty clear that a developer should be able to register
         # a URL with or cache key or prefix or something to be cleared. How
         # would that work?
-        specific_instance_path = reverse('submission-detail', args=[owner, dataset, place, submission_set_name, submission])
-        general_instance_path = reverse('submission-detail', args=[owner, dataset, place, 'submissions', submission])
-        specific_collection_path = reverse('submission-list', args=[owner, dataset, place, submission_set_name])
-        general_collection_path = reverse('submission-list', args=[owner, dataset, place, 'submissions'])
+        specific_instance_path = reverse('submission-detail', args=[owner, dataset, place_model, submission_set_name, submission])
+        general_instance_path = reverse('submission-detail', args=[owner, dataset, place_model, 'submissions', submission])
+        specific_collection_path = reverse('submission-list', args=[owner, dataset, place_model, submission_set_name])
+        general_collection_path = reverse('submission-list', args=[owner, dataset, place_model, 'submissions'])
         specific_all_path = reverse('dataset-submission-list', args=[owner, dataset, submission_set_name])
         general_all_path = reverse('dataset-submission-list', args=[owner, dataset, 'submissions'])
-        place_instance_path = reverse('place-detail', args=[owner, dataset, place])
+        place_instance_path = reverse('place-detail', args=[owner, dataset, place_model])
         place_collection_path = reverse('place-list', args=[owner, dataset])
         dataset_instance_path = reverse('dataset-detail', args=[owner, dataset])
         dataset_collection_path = reverse('dataset-list', args=[owner])

@@ -192,8 +192,6 @@ INSTALLED_APPS = (
     # =================================
     'beta_signup',
     'sa_api_v2',
-    'sa_api_v2.apikey',
-    'sa_api_v2.cors',
     'remote_client_user',
 
     # GeoDjango comes last so that we can override its admin templates.

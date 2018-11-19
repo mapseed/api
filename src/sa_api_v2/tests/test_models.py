@@ -73,8 +73,8 @@ class TestDataIndexes (TestCase):
         User.objects.all().delete()  # Everything should cascade from owner
 
     def test_indexed_values_are_indexed_when_thing_is_saved(self):
-        self.dataset.indexes.add(DataIndex(attr_name='index1'))
-        self.dataset.indexes.add(DataIndex(attr_name='index2'))
+        self.dataset.indexes.add(DataIndex(attr_name='index1'), bulk=False)
+        self.dataset.indexes.add(DataIndex(attr_name='index2'), bulk=False)
 
         st1 = SubmittedThing(dataset=self.dataset)
         st1.data = '{"index1": "value1", "index2": 2, "freetext": "This is an unindexed value."}'
@@ -89,8 +89,8 @@ class TestDataIndexes (TestCase):
         st1.data = '{"index1": "value1", "index2": 2, "freetext": "This is an unindexed value."}'
         st1.save()
 
-        self.dataset.indexes.add(DataIndex(attr_name='index1'))
-        self.dataset.indexes.add(DataIndex(attr_name='index2'))
+        self.dataset.indexes.add(DataIndex(attr_name='index1'), bulk=False)
+        self.dataset.indexes.add(DataIndex(attr_name='index2'), bulk=False)
 
         indexed_values = IndexedValue.objects.filter(index__dataset=self.dataset)
         self.assertEqual(indexed_values.count(), 2)
@@ -109,8 +109,8 @@ class TestDataIndexes (TestCase):
         st3.data = '{"index1": "value1", "index2": 2}'
         st3.save()
 
-        self.dataset.indexes.add(DataIndex(attr_name='index1'))
-        self.dataset.indexes.add(DataIndex(attr_name='index2'))
+        self.dataset.indexes.add(DataIndex(attr_name='index1'), bulk=False)
+        self.dataset.indexes.add(DataIndex(attr_name='index2'), bulk=False)
 
         # index1 only has one value matching 'value1' in self.dataset
         qs = self.dataset.things.filter_by_index('index1', 'value1')
@@ -154,7 +154,7 @@ class TestDataIndexes (TestCase):
             indexed_value.get()
 
     def test_data_values_are_updated_when_saved(self):
-        self.dataset.indexes.add(DataIndex(attr_name='index'))
+        self.dataset.indexes.add(DataIndex(attr_name='index'), bulk=False)
 
         st1 = SubmittedThing(dataset=self.dataset)
         st1.data = '{"index": "value1", "freetext": "This is an unindexed value."}'
@@ -179,7 +179,7 @@ class TestDataIndexes (TestCase):
         st3.data = '{"index": "value1"}'
         st3.save()
 
-        self.dataset.indexes.add(DataIndex(attr_name='index'))
+        self.dataset.indexes.add(DataIndex(attr_name='index'), bulk=False)
         num_indexed_values = IndexedValue.objects.all().count()
 
         # At first, index with 'value1' should match two things.
@@ -211,13 +211,13 @@ class CloningTests (TestCase):
     def test_submission_can_be_cloned(self):
         dataset = DataSet.objects.create(owner=self.owner, slug='dataset')
         place = Place.objects.create(dataset=dataset, geometry='POINT(0 0)')
-        submission = Submission.objects.create(dataset=dataset, place=place, set_name='comments', data='{"field": "value"}')
+        submission = Submission.objects.create(dataset=dataset, place_model=place, set_name='comments', data='{"field": "value"}')
 
         # Clone the object and make sure the clone's values are initialized
         # correctly.
         clone = submission.clone()
         self.assertEqual(clone.dataset, submission.dataset)
-        self.assertEqual(clone.place, submission.place)
+        self.assertEqual(clone.place_model, submission.place_model)
         self.assertEqual(clone.set_name, submission.set_name)
         self.assertEqual(json.loads(clone.data), json.loads(submission.data))
         self.assertNotEqual(clone.id, submission.id)
@@ -243,9 +243,9 @@ class CloningTests (TestCase):
     def test_place_can_be_cloned(self):
         dataset = DataSet.objects.create(owner=self.owner, slug='dataset')
         place = Place.objects.create(dataset=dataset, geometry='POINT(0 0)')
-        Submission.objects.create(dataset=dataset, place=place, set_name='comments', data='{"field": "value1"}')
-        Submission.objects.create(dataset=dataset, place=place, set_name='comments', data='{"field": "value2"}')
-        Submission.objects.create(dataset=dataset, place=place, set_name='support')
+        Submission.objects.create(dataset=dataset, place_model=place, set_name='comments', data='{"field": "value1"}')
+        Submission.objects.create(dataset=dataset, place_model=place, set_name='comments', data='{"field": "value2"}')
+        Submission.objects.create(dataset=dataset, place_model=place, set_name='support')
 
         # Clone the object and make sure the clone's values are initialized
         # correctly.
@@ -283,12 +283,12 @@ class CloningTests (TestCase):
     def test_dataset_can_be_cloned(self):
         dataset = DataSet.objects.create(owner=self.owner, slug='dataset')
         place1 = Place.objects.create(dataset=dataset, geometry='POINT(0 0)')
-        Submission.objects.create(dataset=dataset, place=place1, set_name='comments', data='{"field": "value1"}')
-        Submission.objects.create(dataset=dataset, place=place1, set_name='comments', data='{"field": "value2"}')
-        Submission.objects.create(dataset=dataset, place=place1, set_name='support')
+        Submission.objects.create(dataset=dataset, place_model=place1, set_name='comments', data='{"field": "value1"}')
+        Submission.objects.create(dataset=dataset, place_model=place1, set_name='comments', data='{"field": "value2"}')
+        Submission.objects.create(dataset=dataset, place_model=place1, set_name='support')
         place2 = Place.objects.create(dataset=dataset, geometry='POINT(1 1)')
-        Submission.objects.create(dataset=dataset, place=place2, set_name='comments')
-        Submission.objects.create(dataset=dataset, place=place2, set_name='support')
+        Submission.objects.create(dataset=dataset, place_model=place2, set_name='comments')
+        Submission.objects.create(dataset=dataset, place_model=place2, set_name='support')
 
         apikey = dataset.keys.create(key='somekey')
         apikey.permissions.all().delete()
@@ -466,8 +466,9 @@ class DataPermissionTests (TestCase):
         comments_perm.submission_set = 'comments'
         comments_perm.save()
 
-        places_perm = DataSetPermission(submission_set='places')
+        places_perm = DataSetPermission(submission_set='places', dataset=dataset)
         places_perm.can_retrieve = False
+        places_perm.save()
         dataset.permissions.add(places_perm)
 
         # Make sure anonymous can read comments, but not places.
