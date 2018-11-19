@@ -201,7 +201,7 @@ class UserRelatedField (ShareaboutsRelatedField):
 class PlaceRelatedField (ShareaboutsRelatedField):
     view_name = 'place-detail'
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id')
-    queryset = models.PlaceSubmittedThing.objects.all()
+    queryset = models.Place.objects.all()
 
     def get_object(self, view_name, view_args, view_kwargs):
         lookup_kwargs = {
@@ -778,7 +778,7 @@ class BasePlaceSerializer (SubmittedThingSerializer,
     submitter = SimpleUserSerializer(required=False, allow_null=True)
 
     class Meta:
-        model = models.PlaceSubmittedThing
+        model = models.Place
 
     def get_submission_sets(self, place):
         include_invisible = self.is_flag_on(INCLUDE_INVISIBLE_PARAM)
@@ -965,7 +965,7 @@ class BaseSubmissionSerializer (SubmittedThingSerializer, serializers.ModelSeria
 
 class SimpleSubmissionSerializer (BaseSubmissionSerializer):
     class Meta (BaseSubmissionSerializer.Meta):
-        read_only_fields = ('dataset', 'place')
+        read_only_fields = ('dataset', 'place_model')
 
 class SubmissionListSerializer(serializers.ListSerializer):
     def update(self, instance, validated_data):
@@ -981,7 +981,7 @@ class SubmissionListSerializer(serializers.ListSerializer):
             url_kwargs = self.context['view'].kwargs
             dataset = models.DataSet.objects.get(slug=url_kwargs['dataset_slug'])
             update_or_create_data['dataset_id'] = dataset.id
-            update_or_create_data['place_id'] = url_kwargs['place_id']
+            update_or_create_data['place_model_id'] = url_kwargs['place_id']
             update_or_create_data['set_name'] = url_kwargs['submission_set_name']
             if submission is None:
                 ret.append(self.child.create(update_or_create_data))
@@ -996,11 +996,13 @@ class SubmissionSerializer (BaseSubmissionSerializer,
     url = SubmissionIdentityField()
     dataset = DataSetRelatedField(queryset=models.DataSet.objects.all(), required=False)
     set = SubmissionSetRelatedField(source='*', required=False, read_only=True)
-    place = PlaceRelatedField(required=False)
+    place = PlaceRelatedField(required=False, source='place_model')
     submitter = UserSerializer(required=False, allow_null=True)
 
     class Meta (BaseSubmissionSerializer.Meta):
+        model = models.Submission
         list_serializer_class = SubmissionListSerializer
+        exclude = BaseSubmissionSerializer.Meta.exclude + ('place_model',)
 
 
 # DataSet serializers
@@ -1113,20 +1115,20 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
 
     def get_target_type(self, obj):
         try:
-            if obj.thing.placesubmittedthing is not None:
-                return u'placesubmittedthing'
-        except models.PlaceSubmittedThing.DoesNotExist:
+            if obj.thing.place is not None:
+                return u'place'
+        except models.Place.DoesNotExist:
             pass
 
         return obj.thing.submission.set_name
 
     def get_target(self, obj):
         try:
-            if obj.thing.placesubmittedthing is not None:
-                serializer = PlaceSerializer(obj.thing.placesubmittedthing, context=self.context)
+            if obj.thing.place is not None:
+                serializer = PlaceSerializer(obj.thing.place, context=self.context)
             else:
                 serializer = SubmissionSerializer(obj.thing.submission, context=self.context)
-        except models.PlaceSubmittedThing.DoesNotExist:
+        except models.Place.DoesNotExist:
             serializer = SubmissionSerializer(obj.thing.submission, context=self.context)
 
         return serializer.data

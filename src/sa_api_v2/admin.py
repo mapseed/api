@@ -137,7 +137,7 @@ class InlineApiKeyAdmin(admin.StackedInline):
             return '(You must save your dataset before you can edit the permissions on your API key.)'
         else:
             return (
-                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:apikey_apikey_change', args=[instance.pk]))
+                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:sa_api_v2_apikey_change', args=[instance.pk]))
                 + self.permissions_list(instance)
             )
     edit_url.allow_tags = True
@@ -160,7 +160,7 @@ class InlineOriginAdmin(admin.StackedInline):
             return '(You must save your dataset before you can edit the permissions on your origin.)'
         else:
             return (
-                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:cors_origin_change', args=[instance.pk]))
+                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:sa_api_v2_origin_change', args=[instance.pk]))
                 + self.permissions_list(instance)
             )
     edit_url.allow_tags = True
@@ -291,7 +291,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
 
 
 class PlaceAdmin(SubmittedThingAdmin):
-    model = models.PlaceSubmittedThing
+    model = models.Place
 
     def api_path(self, instance):
         path = reverse('place-detail', args=[instance.dataset.owner, instance.dataset.slug, instance.id])
@@ -302,23 +302,25 @@ class PlaceAdmin(SubmittedThingAdmin):
 class SubmissionAdmin(SubmittedThingAdmin):
     model = models.Submission
 
-    list_display = SubmittedThingAdmin.list_display + ('place', 'set_',)
+    list_display = SubmittedThingAdmin.list_display[:-1] + ('place_model', 'set_',) \
+        + SubmittedThingAdmin.list_display[-1:] # keep the 'data' column at the end
     list_filter = (SubmissionSetFilter,) + SubmittedThingAdmin.list_filter
     search_fields = ('set_name',) + SubmittedThingAdmin.search_fields
 
-    raw_id_fields = ('submitter', 'dataset', 'place')
+    raw_id_fields = ('submitter', 'dataset', 'place_model')
 
     def set_(self, obj):
         return obj.set_name
     set_.short_description = 'Set'
     set_.admin_order_field = 'set_name'
 
-    def place(self, obj):
-        return obj.place_id
-    place.admin_order_field = 'place'
+    def place_model(self, obj):
+        return obj.place_model_id
+    place_model.short_description = 'Place'
+    place_model.admin_order_field = 'place_model__id'
 
     def api_path(self, instance):
-        path = reverse('submission-detail', args=[instance.dataset.owner, instance.dataset.slug, instance.place.id, instance.set_name, instance.id])
+        path = reverse('submission-detail', args=[instance.dataset.owner, instance.dataset.slug, instance.place_model.id, instance.set_name, instance.id])
         return '<a href="{0}">{0}</a>'.format(path)
     api_path.allow_tags = True
 
@@ -334,17 +336,17 @@ class ActionAdmin(admin.ModelAdmin):
         user = request.user
         if not user.is_superuser:
             qs = qs.filter(thing__dataset__owner=user)
-        return qs.select_related('thing', 'thing__placesubmittedthing', 'thing__submitter')
+        return qs.select_related('thing', 'thing__place', 'thing__submitter')
 
     def submitter_name(self, obj):
         return obj.submitter.username if obj.submitter else None
 
     def type_of_thing(self, obj):
         try:
-            if obj.thing.placesubmittedthing is not None:
+            if obj.thing.place is not None:
                 return 'place'
-        except models.PlaceSubmittedThing.DoesNotExist:
-            return 'submission'
+        except models.Place.DoesNotExist:
+            return obj.thing.submission.set_name
 
 
 class InlineGroupPermissionAdmin(admin.TabularInline):
@@ -396,7 +398,7 @@ class UserAdmin(BaseUserAdmin):
 
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.DataSet, DataSetAdmin)
-admin.site.register(models.PlaceSubmittedThing, PlaceAdmin)
+admin.site.register(models.Place, PlaceAdmin)
 admin.site.register(models.Submission, SubmissionAdmin)
 admin.site.register(models.Action, ActionAdmin)
 admin.site.register(models.Group, GroupAdmin)

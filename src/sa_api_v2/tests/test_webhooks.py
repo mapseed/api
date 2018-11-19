@@ -55,11 +55,11 @@ class TestPlaceListView (APITestMixin, TestCase):
           }),
         )
         self.submissions = [
-          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{}'),
-          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{}'),
-          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{}'),
-          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{}'),
-          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{}'),
+          Submission.objects.create(place_model=self.place, set_name='comments', dataset=self.dataset, data='{}'),
+          Submission.objects.create(place_model=self.place, set_name='comments', dataset=self.dataset, data='{}'),
+          Submission.objects.create(place_model=self.place, set_name='likes', dataset=self.dataset, data='{}'),
+          Submission.objects.create(place_model=self.place, set_name='likes', dataset=self.dataset, data='{}'),
+          Submission.objects.create(place_model=self.place, set_name='likes', dataset=self.dataset, data='{}'),
         ]
 
         self.ds_origin = Origin.objects.create(pattern='http://openplans.github.com', dataset=self.dataset)

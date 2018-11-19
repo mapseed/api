@@ -3,7 +3,7 @@ from django.db.models.signals import post_save
 from .. import utils
 from .core import CacheClearingModel
 from .core import DataSet
-from .core import PlaceSubmittedThing
+from .core import Place
 from .mixins import CloneableModelMixin
 
 class DataPermissionManager (models.Manager):
@@ -22,7 +22,7 @@ class DataPermissionManager (models.Manager):
             can_update=can_update,
             can_destroy=can_destroy,
             can_access_protected=can_access_protected,
-            priority=priority))
+            priority=priority), bulk=False)
 
 
 class DataPermission (CloneableModelMixin, CacheClearingModel, models.Model):
@@ -111,7 +111,7 @@ class GroupPermission (DataPermission):
 
 
 class KeyPermission (DataPermission):
-    key = models.ForeignKey('apikey.ApiKey', related_name='permissions')
+    key = models.ForeignKey('sa_api_v2.ApiKey', related_name='permissions')
     parent_attr = 'key'
 
     class Meta:
@@ -122,7 +122,7 @@ class KeyPermission (DataPermission):
 
 
 class OriginPermission (DataPermission):
-    origin = models.ForeignKey('cors.Origin', related_name='permissions')
+    origin = models.ForeignKey('sa_api_v2.Origin', related_name='permissions')
     parent_attr = 'origin'
 
     class Meta:
@@ -191,7 +191,7 @@ def check_data_permission(user, client, place_id, do_action, dataset, submission
 
     # Finally, check place permissions
     if place_id is not None and user is not None and user.is_authenticated:
-        target_place = PlaceSubmittedThing.objects.get(id=place_id)
+        target_place = Place.objects.get(id=place_id)
         submitter = getattr(target_place, 'submitter', None)
         place_submitter_id = getattr(submitter, 'id', None)
         user_id = getattr(user, 'id', None)
