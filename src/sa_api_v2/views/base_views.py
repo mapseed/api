@@ -46,8 +46,6 @@ from itertools import groupby, count
 from collections import defaultdict
 from urllib import urlencode
 import re
-import time
-import hashlib
 import requests
 import ujson as json
 import logging
@@ -1897,11 +1895,6 @@ class SessionKeyView (CorsEnabledMixin, views.APIView):
 
     def get(self, request):
         if 'user_token' not in request.session:
-            t = int(time.time() * 1000)
-            ip = request.META['REMOTE_ADDR']
-            unique_string = (str(t) + str(ip)).encode()
-            session_token = 'session:' + hashlib.md5(unique_string).hexdigest()
-            request.session['user_token'] = session_token
             request.session.set_expiry(0)
             request.session.save()
 
