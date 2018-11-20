@@ -1894,6 +1894,9 @@ class SessionKeyView (CorsEnabledMixin, views.APIView):
     content_negotiation_class = ShareaboutsContentNegotiation
 
     def get(self, request):
+        request.session.set_expiry(0)
+        request.session.save()
+
         return Response({
             settings.SESSION_COOKIE_NAME: request.session.session_key,
         }, headers={'cache-control': 'private, max-age=0, no-cache'})
