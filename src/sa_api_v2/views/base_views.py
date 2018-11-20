@@ -1894,9 +1894,8 @@ class SessionKeyView (CorsEnabledMixin, views.APIView):
     content_negotiation_class = ShareaboutsContentNegotiation
 
     def get(self, request):
-        if 'user_token' not in request.session:
-            request.session.set_expiry(0)
-            request.session.save()
+        request.session.set_expiry(0)
+        request.session.save()
 
         return Response({
             settings.SESSION_COOKIE_NAME: request.session.session_key,
