@@ -277,9 +277,10 @@ class Place (SubmittedThing):
         app_label = 'sa_api_v2'
         db_table = 'sa_api_place'
         ordering = ['-updated_datetime']
+        verbose_name = "place"
 
     def clone_related(self, onto):
-        data_overrides = {'place': onto, 'dataset': onto.dataset}
+        data_overrides = {'place_model': onto, 'dataset': onto.dataset}
         for submission in self.submissions.all():
             submission.clone(overrides=data_overrides)
 
@@ -293,7 +294,7 @@ class Submission (SubmittedThing):
     It belongs to a Place.
     Used for representing eg. comments, votes, ...
     """
-    place = models.ForeignKey(Place, related_name='submissions')
+    place_model = models.ForeignKey(Place, related_name='submissions')
     set_name = models.TextField(db_index=True)
 
     objects = SubmittedThingManager()

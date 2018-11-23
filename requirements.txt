@@ -2,7 +2,7 @@
 # Web server
 # ==============================
 
-Django==1.8.12
+Django==1.9.13
 gevent==1.1.1
 gunicorn==19.5
 newrelic==2.60.0.46
@@ -43,8 +43,7 @@ django-storages==1.4.1
 # ==============================
 # User Accounts and Social Media
 # ==============================
-
-python-social-auth==0.2.14
+python-social-auth==0.2.21
 django-loginas==0.2.2
 # Use fork of oauth2-provider, for Django 1.7 compatibility
 # django-oauth2-provider==0.2.6.1

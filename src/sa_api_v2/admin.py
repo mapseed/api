@@ -19,6 +19,7 @@ from django_ace import AceWidget
 from django_object_actions import DjangoObjectActions
 from .apikey.models import ApiKey
 from .cors.models import Origin
+from .cors.admin import OriginAdmin
 from .tasks import clone_related_dataset_data
 
 
@@ -301,23 +302,25 @@ class PlaceAdmin(SubmittedThingAdmin):
 class SubmissionAdmin(SubmittedThingAdmin):
     model = models.Submission
 
-    list_display = SubmittedThingAdmin.list_display + ('place', 'set_',)
+    list_display = SubmittedThingAdmin.list_display[:-1] + ('place_model', 'set_',) \
+        + SubmittedThingAdmin.list_display[-1:] # keep the 'data' column at the end
     list_filter = (SubmissionSetFilter,) + SubmittedThingAdmin.list_filter
     search_fields = ('set_name',) + SubmittedThingAdmin.search_fields
 
-    raw_id_fields = ('submitter', 'dataset', 'place')
+    raw_id_fields = ('submitter', 'dataset', 'place_model')
 
     def set_(self, obj):
         return obj.set_name
     set_.short_description = 'Set'
     set_.admin_order_field = 'set_name'
 
-    def place(self, obj):
-        return obj.place_id
-    place.admin_order_field = 'place'
+    def place_model(self, obj):
+        return obj.place_model_id
+    place_model.short_description = 'Place'
+    place_model.admin_order_field = 'place_model__id'
 
     def api_path(self, instance):
-        path = reverse('submission-detail', args=[instance.dataset.owner, instance.dataset.slug, instance.place.id, instance.set_name, instance.id])
+        path = reverse('submission-detail', args=[instance.dataset.owner, instance.dataset.slug, instance.place_model.id, instance.set_name, instance.id])
         return '<a href="{0}">{0}</a>'.format(path)
     api_path.allow_tags = True
 
@@ -339,10 +342,11 @@ class ActionAdmin(admin.ModelAdmin):
         return obj.submitter.username if obj.submitter else None
 
     def type_of_thing(self, obj):
-        if obj.thing.place:
-            return 'place'
-        else:
-            return 'submission'
+        try:
+            if obj.thing.place is not None:
+                return 'place'
+        except models.Place.DoesNotExist:
+            return obj.thing.submission.set_name
 
 
 class InlineGroupPermissionAdmin(admin.TabularInline):

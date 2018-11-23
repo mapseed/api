@@ -965,7 +965,7 @@ class BaseSubmissionSerializer (SubmittedThingSerializer, serializers.ModelSeria
 
 class SimpleSubmissionSerializer (BaseSubmissionSerializer):
     class Meta (BaseSubmissionSerializer.Meta):
-        read_only_fields = ('dataset', 'place')
+        read_only_fields = ('dataset', 'place_model')
 
 class SubmissionListSerializer(serializers.ListSerializer):
     def update(self, instance, validated_data):
@@ -981,7 +981,7 @@ class SubmissionListSerializer(serializers.ListSerializer):
             url_kwargs = self.context['view'].kwargs
             dataset = models.DataSet.objects.get(slug=url_kwargs['dataset_slug'])
             update_or_create_data['dataset_id'] = dataset.id
-            update_or_create_data['place_id'] = url_kwargs['place_id']
+            update_or_create_data['place_model_id'] = url_kwargs['place_id']
             update_or_create_data['set_name'] = url_kwargs['submission_set_name']
             if submission is None:
                 ret.append(self.child.create(update_or_create_data))
@@ -996,11 +996,13 @@ class SubmissionSerializer (BaseSubmissionSerializer,
     url = SubmissionIdentityField()
     dataset = DataSetRelatedField(queryset=models.DataSet.objects.all(), required=False)
     set = SubmissionSetRelatedField(source='*', required=False, read_only=True)
-    place = PlaceRelatedField(required=False)
+    place = PlaceRelatedField(required=False, source='place_model')
     submitter = UserSerializer(required=False, allow_null=True)
 
     class Meta (BaseSubmissionSerializer.Meta):
+        model = models.Submission
         list_serializer_class = SubmissionListSerializer
+        exclude = BaseSubmissionSerializer.Meta.exclude + ('place_model',)
 
 
 # DataSet serializers
