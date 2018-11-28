@@ -83,6 +83,10 @@ urlpatterns = patterns('sa_api_v2',
         views.DataSetListView.as_view(),
         name='dataset-list'),
 
+    url(r'^email-template/(?P<email_template_id>\d+)$',
+        views.EmailTemplateDetailView.as_view(),
+        name='email-template-detail'),
+
     # profiles and user info
 
     url(r'^(?P<owner_username>[^/]+)$',
