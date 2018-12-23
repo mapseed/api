@@ -112,7 +112,7 @@ urlpatterns = patterns('sa_api_v2',
     # switch to django-oauth-toolkit url package:
     url(r'^users/oauth2/', include('oauth2_provider.urls', namespace='oauth2')),
 
-    url(r'^users/', include('social.apps.django_app.urls', namespace='social')),
+    url(r'^users/', include('social_django.urls', namespace='social')),
 
     url(r'^forms/', include('rest_framework.urls', namespace='rest_framework')),
 

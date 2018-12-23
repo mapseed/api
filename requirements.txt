@@ -43,7 +43,8 @@ django-storages==1.4.1
 # ==============================
 # User Accounts and Social Media
 # ==============================
-python-social-auth==0.2.21
+social-auth-core==1.7.0
+social-auth-app-django==2.1.0
 django-loginas==0.2.2
 # Use fork of oauth2-provider, for Django 1.7 compatibility
 # django-oauth2-provider==0.2.6.1

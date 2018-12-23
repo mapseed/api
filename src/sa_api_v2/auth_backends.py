@@ -1,6 +1,7 @@
 from django.contrib.auth.backends import ModelBackend
 from .cache import UserCache
-from social.backends.facebook import FacebookOAuth2
+from social_core.backends.facebook import FacebookOAuth2
+
 
 class CachedModelBackend (ModelBackend):
     def get_user(self, user_id):
