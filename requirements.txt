@@ -28,7 +28,7 @@ psycopg2==2.6.1
 # psycopg2-binary==2.7.5
 psycogreen==1.0
 dj-database-url==0.4.1
-django-object-actions==0.8.0
+django-object-actions==1.0.0
 
 # Caching
 django-redis==4.4.2
