@@ -143,6 +143,10 @@ class InlineApiKeyAdmin(admin.StackedInline):
     edit_url.allow_tags = True
 
 
+class InlineLabelAdmin(admin.StackedInline):
+    model = models.Label
+
+
 class InlineOriginAdmin(admin.StackedInline):
     model = Origin
     raw_id_fields = ['place_email_template']
@@ -237,7 +241,15 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
     change_actions = ('clone_dataset', 'clear_cache')
     raw_id_fields = ('owner',)
     readonly_fields = ('api_path',)
-    inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin, InlineWebhookAdmin]
+    inlines = [
+        InlineDataIndexAdmin,
+        InlineDataSetPermissionAdmin,
+        InlineApiKeyAdmin,
+        InlineOriginAdmin,
+        InlineGroupAdmin,
+        InlineLabelAdmin,
+        InlineWebhookAdmin
+    ]
 
     def clear_cache(self, request, obj):
         obj.clear_instance_cache()

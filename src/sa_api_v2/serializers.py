@@ -1067,11 +1067,19 @@ class SimpleDataSetSerializer (BaseDataSetSerializer, serializers.ModelSerialize
     class Meta (BaseDataSetSerializer.Meta):
         pass
 
+
+class LabelRelatedFieldSerializer (serializers.ModelSerializer):
+    class Meta:
+        model = models.Label
+        exclude = ['dataset']
+
+
 class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSerializer):
     url = DataSetIdentityField()
     owner = UserRelatedField(read_only=True)
 
     places = DataSetPlaceSetSummarySerializer(source='*', read_only=True)
+    labels = LabelRelatedFieldSerializer(many=True)
     submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True)
 
     load_from_url = serializers.URLField(write_only=True, required=False)
