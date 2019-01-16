@@ -575,6 +575,16 @@ class GroupSerializer (BaseGroupSerializer):
         ret['dataset'] = six.text_type(self.fields['dataset']
                                        .to_representation(obj.dataset))
         ret['name'] = obj.name
+        ret['dataset_slug'] = obj.dataset.slug
+        ret['permissions'] = [] 
+
+        permissions = obj.permissions.all()
+        for permission in permissions:
+            ret['permissions'].append({
+                'abilities': permission.get_abilities(),
+                'submission_set': permission.submission_set
+            })
+
         return ret
 
 
