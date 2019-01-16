@@ -578,8 +578,7 @@ class GroupSerializer (BaseGroupSerializer):
         ret['dataset_slug'] = obj.dataset.slug
         ret['permissions'] = [] 
 
-        permissions = obj.permissions.all()
-        for permission in permissions:
+        for permission in obj.permissions.all():
             ret['permissions'].append({
                 'abilities': permission.get_abilities(),
                 'submission_set': permission.submission_set
