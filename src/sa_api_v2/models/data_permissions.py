@@ -59,13 +59,17 @@ class DataPermission (CloneableModelMixin, CacheClearingModel, models.Model):
         return locals()
     dataset = property(**dataset())
 
-    def abilities(self):
+    def get_abilities(self):
         abilities = []
         if self.can_create: abilities.append('create')
         if self.can_retrieve: abilities.append('retrieve')
         if self.can_update: abilities.append('update')
         if self.can_destroy: abilities.append('destroy')
 
+        return abilities
+
+    def abilities(self):
+        abilities = self.get_abilities()
         things = self.submission_set if self.submission_set.strip() not in ('', '*') else 'anything'
 
         if abilities:

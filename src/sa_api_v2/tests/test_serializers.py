@@ -241,7 +241,9 @@ class TestUserSerializer (TestCase):
             [{'dataset': reverse('dataset-detail',
                                  kwargs={'dataset_slug': 'ds1',
                                          'owner_username': 'my_owning_user'}),
-              'name': 'special users'}])
+              'name': 'special users',
+              'dataset_slug': 'ds1',
+              'permissions': []}])
 
 
 class TestPlaceSerializer (TestCase):
