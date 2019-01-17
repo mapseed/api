@@ -1059,9 +1059,9 @@ class SimpleDataSetSerializer (BaseDataSetSerializer, serializers.ModelSerialize
         pass
 
 
-class LabelRelatedFieldSerializer (serializers.ModelSerializer):
+class TagRelatedFieldSerializer (serializers.ModelSerializer):
     class Meta:
-        model = models.Label
+        model = models.Tag
         exclude = ['dataset']
 
 
@@ -1070,7 +1070,7 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
     owner = UserRelatedField(read_only=True)
 
     places = DataSetPlaceSetSummarySerializer(source='*', read_only=True)
-    labels = LabelRelatedFieldSerializer(many=True)
+    tags = TagRelatedFieldSerializer(many=True, read_only=True)
     submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True)
 
     load_from_url = serializers.URLField(write_only=True, required=False)

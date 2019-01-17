@@ -143,8 +143,8 @@ class InlineApiKeyAdmin(admin.StackedInline):
     edit_url.allow_tags = True
 
 
-class InlineLabelAdmin(admin.StackedInline):
-    model = models.Label
+class InlineTagAdmin(admin.StackedInline):
+    model = models.Tag
 
 
 class InlineOriginAdmin(admin.StackedInline):
@@ -247,7 +247,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
         InlineApiKeyAdmin,
         InlineOriginAdmin,
         InlineGroupAdmin,
-        InlineLabelAdmin,
+        InlineTagAdmin,
         InlineWebhookAdmin
     ]
 

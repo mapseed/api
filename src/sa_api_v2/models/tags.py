@@ -4,10 +4,11 @@ from .core import DataSet, Place, TimeStampedModel
 from .profiles import User
 
 
-class Label(ClosureModel):
+class Tag(ClosureModel):
     name = models.CharField(max_length=24)
-    parent = models.ForeignKey('self', related_name='children', on_delete=models.CASCADE, null=True, blank=True)
-    dataset = models.ForeignKey(DataSet, related_name='labels', on_delete=models.CASCADE)
+    parent = models.ForeignKey('self', related_name='children',
+                               on_delete=models.CASCADE, null=True, blank=True)
+    dataset = models.ForeignKey(DataSet, related_name='tags', on_delete=models.CASCADE)
 
     def __unicode__(self):
         if self.parent:
@@ -18,17 +19,17 @@ class Label(ClosureModel):
 
     class Meta:
         app_label = 'sa_api_v2'
-        db_table = 'ms_api_label'
+        db_table = 'ms_api_tag'
         ordering = ['name']
 
 
-class Tag(TimeStampedModel):
-    label = models.ForeignKey(Label, related_name='label', null=False)
+class PlaceTag(TimeStampedModel):
+    tag = models.ForeignKey(Tag, related_name='tag', null=False)
     submitter = models.ForeignKey(User, related_name='+', null=True)
     place = models.ForeignKey(Place, related_name='tags')
     note = models.TextField(blank=True)
 
     class Meta:
         app_label = 'sa_api_v2'
-        db_table = 'ms_api_tag'
+        db_table = 'ms_api_place_tag'
         ordering = ['-created_datetime']
