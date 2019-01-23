@@ -33,7 +33,7 @@ class Tag(ClosureModel):
 
 class PlaceTag(TimeStampedModel):
     tag = models.ForeignKey(Tag, related_name='place_tags', null=False, on_delete=models.CASCADE)
-    submitter = models.ForeignKey(User, related_name='+', null=True, on_delete=models.SET_NULL)
+    submitter = models.ForeignKey(User, related_name='+', null=True, blank=True, on_delete=models.SET_NULL)
     place = models.ForeignKey(Place, related_name='tags', on_delete=models.CASCADE)
     note = models.TextField(blank=True)
 

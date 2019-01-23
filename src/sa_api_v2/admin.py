@@ -302,8 +302,16 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
         super(DataSetAdmin, self).save_model(request, obj, form, change)
 
 
+class InlinePlaceTagAdmin(admin.StackedInline):
+    model = models.PlaceTag
+
+
 class PlaceAdmin(SubmittedThingAdmin):
     model = models.Place
+    inlines = [
+        InlinePlaceTagAdmin,
+        InlineAttachmentAdmin
+    ]
 
     def api_path(self, instance):
         path = reverse('place-detail', args=[instance.dataset.owner, instance.dataset.slug, instance.id])
