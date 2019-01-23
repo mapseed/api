@@ -1068,15 +1068,15 @@ class TagSerializer (serializers.ModelSerializer):
         fields = ['id', 'name', 'parent', 'color', 'is_enabled']
 
 
-class PlaceTagSerializer (serializers.HyperlinkedModelSerializer):
+class PlaceTagSerializer (serializers.ModelSerializer):
     url = PlaceTagIdentityField()
     id = serializers.IntegerField(read_only=True, required=False)
     place = PlaceRelatedField()
     submitter = SimpleUserSerializer(required=False, allow_null=True)
     note = serializers.CharField(allow_blank=True)
     tag = TagRelatedField()
-    created_datetime = serializers.DateTimeField()
-    updated_datetime = serializers.DateTimeField()
+    created_datetime = serializers.DateTimeField(required=False)
+    updated_datetime = serializers.DateTimeField(required=False)
 
     class Meta:
         model = models.PlaceTag
