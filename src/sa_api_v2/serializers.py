@@ -872,6 +872,63 @@ class BasePlaceSerializer (SubmittedThingSerializer,
 
         return summaries
 
+    def get_tag_summary(self, place):
+        """
+        Get a mapping from place id to a tag summary dictionary.
+        Get this for the entire dataset at once.
+        """
+        # request = self.context['request']
+
+        # tags = self.get_tags(place)
+        # TODO: verify what these tags are:
+        tags = place.tags
+        # summaries = {}
+
+        # for set_name, submissions in submission_sets.iteritems():
+
+        # # Ensure the user has read permission on the submission set.
+        # user = getattr(request, 'user', None)
+        # client = getattr(request, 'client', None)
+        # dataset = getattr(request, 'get_dataset', lambda: None)()
+
+        # if not check_data_permission(user, client, None, 'retrieve', dataset, 'tags'):
+        #     return
+
+        # return self.summary_to_native(tags)
+        return {
+            # TODO: get the url for our tags here:
+            # 'url': tags.url,
+            'name': '/api/v2/user/dataset/pbdurham/place/123/tags',
+            # 'length': len(tags),
+            'length': 2,
+        }
+
+        # return summaries
+
+    def get_detailed_tags(self, place):
+        """
+        Get a mapping from place id to a tag summary dictionary.
+        Get this for the entire dataset at once.
+        """
+        # request = self.context['request']
+
+        # tags = self.get_tags(place)
+        # TODO: verify what these tags are:
+        tags = place.tags
+
+        # details = []
+        # for tag in tags:
+        #     details.append[tag]
+
+        # return self.summary_to_native(tags)
+        # return {
+        #     # TODO: get the url for our tags here:
+        #     'length': len(tags),
+        # }
+
+        # return details
+        return tags
+
     def set_to_native(self, set_name, submissions):
         serializer = SimpleSubmissionSerializer(submissions, many=True, context=self.context)
         return serializer.data
@@ -943,7 +1000,13 @@ class BasePlaceSerializer (SubmittedThingSerializer,
         else:
             submission_sets_getter = self.get_detailed_submission_sets
 
+        if not self.is_flag_on(INCLUDE_TAGS_PARAM):
+            tags_getter = self.get_tag_summary
+        else:
+            tags_getter = self.get_detailed_tags
+
         data['submission_sets'] = submission_sets_getter(obj)
+        data['tags'] = tags_getter(obj)
 
         if hasattr(obj, 'distance'):
             data['distance'] = str(obj.distance)
