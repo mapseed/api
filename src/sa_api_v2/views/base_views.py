@@ -238,9 +238,9 @@ class FilteredResourceMixin (object):
 
         # These filters will have been applied when constructing the queryset
         special_filters = set([FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM(),
-            INCLUDE_SUBMISSIONS_PARAM, INCLUDE_PRIVATE_PARAM,
-            INCLUDE_INVISIBLE_PARAM, NEAR_PARAM, DISTANCE_PARAM,
-            TEXTSEARCH_PARAM, BBOX_PARAM, CALLBACK_PARAM(self)])
+                               INCLUDE_SUBMISSIONS_PARAM, INCLUDE_TAGS_PARAM, INCLUDE_PRIVATE_PARAM,
+                               INCLUDE_INVISIBLE_PARAM, NEAR_PARAM, DISTANCE_PARAM,
+                               TEXTSEARCH_PARAM, BBOX_PARAM, CALLBACK_PARAM(self)])
 
         # Filter by full-text search
         textsearch_filter = self.request.GET.get(TEXTSEARCH_PARAM, None)

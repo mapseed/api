@@ -892,57 +892,24 @@ class BasePlaceSerializer (SubmittedThingSerializer,
         Get a mapping from place id to a tag summary dictionary.
         Get this for the entire dataset at once.
         """
-        # request = self.context['request']
-
-        # tags = self.get_tags(place)
-        # TODO: verify what these tags are:
-        tags = place.tags
-        # summaries = {}
-
-        # for set_name, submissions in submission_sets.iteritems():
-
-        # # Ensure the user has read permission on the submission set.
-        # user = getattr(request, 'user', None)
-        # client = getattr(request, 'client', None)
-        # dataset = getattr(request, 'get_dataset', lambda: None)()
-
-        # if not check_data_permission(user, client, None, 'retrieve', dataset, 'tags'):
-        #     return
-
-        # return self.summary_to_native(tags)
         return {
             # TODO: get the url for our tags here:
             # 'url': tags.url,
-            'name': '/api/v2/user/dataset/pbdurham/place/123/tags',
-            # 'length': len(tags),
-            'length': 2,
+            'name': 'tags',
+            'length': place.tags.count(),
         }
-
-        # return summaries
 
     def get_detailed_tags(self, place):
         """
-        Get a mapping from place id to a tag summary dictionary.
-        Get this for the entire dataset at once.
+        Get a mapping from place id to an array of place tag details.
+        TODO: Get this for the entire dataset at once.
         """
-        # request = self.context['request']
+        request = self.context['request']
 
-        # tags = self.get_tags(place)
-        # TODO: verify what these tags are:
-        tags = place.tags
+        tags = place.tags.all()
 
-        # details = []
-        # for tag in tags:
-        #     details.append[tag]
-
-        # return self.summary_to_native(tags)
-        # return {
-        #     # TODO: get the url for our tags here:
-        #     'length': len(tags),
-        # }
-
-        # return details
-        return tags
+        return [PlaceTagSerializer(context={'request': request})
+                .to_representation(tag) for tag in tags]
 
     def set_to_native(self, set_name, submissions):
         serializer = SimpleSubmissionSerializer(submissions, many=True, context=self.context)
