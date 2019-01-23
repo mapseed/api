@@ -42,11 +42,10 @@ class TagInstanceView (generics.RetrieveAPIView):
     def get_object(self, queryset=None):
         tag_id = self.kwargs['tag_id']
         obj = self.get_object_or_404(tag_id)
-        self.verify_object(obj)
         return obj
 
 
-class TagListView (generics.RetrieveAPIView):
+class TagListView (generics.ListAPIView):
     """
 
     GET

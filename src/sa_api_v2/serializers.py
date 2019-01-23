@@ -311,6 +311,21 @@ class SubmissionIdentityField (ShareaboutsIdentityField):
     view_name = 'submission-detail'
 
 
+class TagIdentityField (serializers.HyperlinkedIdentityField):
+    lookup_field = 'id'
+
+    def __init__(self, *args, **kwargs):
+        super(TagIdentityField, self).__init__(view_name='tag-detail', *args, **kwargs)
+
+    def get_url(self, obj, view_name, request, format):
+        url_kwargs = {
+            'owner_username': obj.dataset.owner.get_username(),
+            'dataset_slug': obj.dataset.slug,
+            'tag_id': obj.pk
+        }
+        return reverse(view_name, kwargs=url_kwargs, request=request, format=format)
+
+
 class PlaceTagIdentityField (serializers.HyperlinkedIdentityField):
     lookup_field = 'id'
 
@@ -1126,9 +1141,11 @@ class SubmissionSerializer (BaseSubmissionSerializer,
 
 
 class TagSerializer (serializers.ModelSerializer):
+    url = TagIdentityField()
+
     class Meta:
         model = models.Tag
-        fields = ['id', 'name', 'parent', 'color', 'is_enabled']
+        fields = ['id', 'url', 'name', 'parent', 'color', 'is_enabled']
 
 
 class PlaceTagSerializer (serializers.ModelSerializer):
