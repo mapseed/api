@@ -1,7 +1,13 @@
+import re
 from closuretree.models import ClosureModel
 from django.contrib.gis.db import models
 from .core import DataSet, Place, TimeStampedModel
+from .. import cache
 from .profiles import User
+from django.core.validators import RegexValidator
+
+color_re = re.compile('^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$')
+validate_color = RegexValidator(regex=color_re, message='Enter a valid color.', code='invalid')
 
 
 class Tag(ClosureModel):
@@ -9,6 +15,8 @@ class Tag(ClosureModel):
     parent = models.ForeignKey('self', related_name='children',
                                on_delete=models.CASCADE, null=True, blank=True)
     dataset = models.ForeignKey(DataSet, related_name='tags', on_delete=models.CASCADE)
+    color = models.CharField(max_length=7, validators=[validate_color], null=True, blank=True)
+    is_enabled = models.BooleanField(default=True)
 
     def __unicode__(self):
         if self.parent:
@@ -24,10 +32,12 @@ class Tag(ClosureModel):
 
 
 class PlaceTag(TimeStampedModel):
-    tag = models.ForeignKey(Tag, related_name='tag', null=False)
-    submitter = models.ForeignKey(User, related_name='+', null=True)
-    place = models.ForeignKey(Place, related_name='tags')
+    tag = models.ForeignKey(Tag, related_name='place_tags', null=False, on_delete=models.CASCADE)
+    submitter = models.ForeignKey(User, related_name='+', null=True, on_delete=models.SET_NULL)
+    place = models.ForeignKey(Place, related_name='tags', on_delete=models.CASCADE)
     note = models.TextField(blank=True)
+
+    cache = cache.PlaceTagCache()
 
     class Meta:
         app_label = 'sa_api_v2'

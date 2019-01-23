@@ -17,11 +17,18 @@ from . import apikey
 from . import cors
 from . import models
 from .models import check_data_permission
-from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
-    INCLUDE_SUBMISSIONS_PARAM, FORMAT_PARAM)
+from .params import (
+    INCLUDE_INVISIBLE_PARAM,
+    INCLUDE_TAGS_PARAM,
+    INCLUDE_PRIVATE_PARAM,
+    INCLUDE_SUBMISSIONS_PARAM,
+    FORMAT_PARAM
+)
 
 import logging
 log = logging.getLogger(__name__)
+
+# TODO: renmae this into serializers/core.py and make a separate serializers/__init__.py
 
 
 ###############################################################################
@@ -216,6 +223,29 @@ class SubmissionSetRelatedField (ShareaboutsRelatedField):
                      'submission_set_name')
 
 
+# TODO: enable this with caching
+class TagRelatedField (serializers.HyperlinkedRelatedField):
+    view_name = 'tag-detail'
+    queryset = models.Tag.objects.all()
+    lookup_field = 'id'
+
+    def get_url(self, obj, view_name, request, format):
+        url_kwargs = {
+            'owner_username': obj.dataset.owner.get_username(),
+            'dataset_slug': obj.dataset.slug,
+            'tag_id': obj.pk
+        }
+        return reverse(view_name, kwargs=url_kwargs, request=request, format=format)
+
+    # TODO: do we need this?
+    def get_object(self, view_name, view_args, view_kwargs):
+        lookup_kwargs = {
+           'dataset__slug': view_kwargs['dataset_slug'],
+           'id': view_kwargs['tag_id']
+        }
+        return self.get_queryset().get(**lookup_kwargs)
+
+
 class ShareaboutsIdentityField (ShareaboutsFieldMixin,
                                 serializers.HyperlinkedIdentityField):
     read_only = True
@@ -279,6 +309,22 @@ class SubmissionIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id',
                      'submission_set_name', 'submission_id')
     view_name = 'submission-detail'
+
+
+class PlaceTagIdentityField (serializers.HyperlinkedIdentityField):
+    lookup_field = 'id'
+
+    def __init__(self, *args, **kwargs):
+        super(PlaceTagIdentityField, self).__init__(view_name='place-tag-detail', *args, **kwargs)
+
+    def get_url(self, obj, view_name, request, format):
+        url_kwargs = {
+            'owner_username': obj.tag.dataset.owner.get_username(),
+            'dataset_slug': obj.tag.dataset.slug,
+            'place_id': obj.place.id,
+            'place_tag_id': obj.pk
+        }
+        return reverse(view_name, kwargs=url_kwargs, request=request, format=format)
 
 
 class DataSetIdentityField (ShareaboutsIdentityField):
@@ -976,6 +1022,7 @@ class SimpleSubmissionSerializer (BaseSubmissionSerializer):
     class Meta (BaseSubmissionSerializer.Meta):
         read_only_fields = ('dataset', 'place_model')
 
+
 class SubmissionListSerializer(serializers.ListSerializer):
     def update(self, instance, validated_data):
         submission_mapping = {submission.id: submission for submission in instance}
@@ -999,6 +1046,7 @@ class SubmissionListSerializer(serializers.ListSerializer):
 
         return ret
 
+
 class SubmissionSerializer (BaseSubmissionSerializer,
                             serializers.HyperlinkedModelSerializer):
     id = serializers.IntegerField(required=False)
@@ -1012,6 +1060,27 @@ class SubmissionSerializer (BaseSubmissionSerializer,
         model = models.Submission
         list_serializer_class = SubmissionListSerializer
         exclude = BaseSubmissionSerializer.Meta.exclude + ('place_model',)
+
+
+class TagSerializer (serializers.ModelSerializer):
+    class Meta:
+        model = models.Tag
+        fields = ['id', 'name', 'parent', 'color', 'is_enabled']
+
+
+class PlaceTagSerializer (serializers.HyperlinkedModelSerializer):
+    url = PlaceTagIdentityField()
+    id = serializers.IntegerField(read_only=True, required=False)
+    place = PlaceRelatedField()
+    submitter = SimpleUserSerializer(required=False, allow_null=True)
+    note = serializers.CharField(allow_blank=True)
+    tag = TagRelatedField()
+    created_datetime = serializers.DateTimeField()
+    updated_datetime = serializers.DateTimeField()
+
+    class Meta:
+        model = models.PlaceTag
+        fields = ('url', 'id', 'place', 'submitter', 'note', 'tag', 'created_datetime', 'updated_datetime')
 
 
 # DataSet serializers
@@ -1068,18 +1137,14 @@ class SimpleDataSetSerializer (BaseDataSetSerializer, serializers.ModelSerialize
         pass
 
 
-class TagRelatedFieldSerializer (serializers.ModelSerializer):
-    class Meta:
-        model = models.Tag
-        exclude = ['dataset']
-
-
 class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSerializer):
     url = DataSetIdentityField()
     owner = UserRelatedField(read_only=True)
 
     places = DataSetPlaceSetSummarySerializer(source='*', read_only=True)
-    tags = TagRelatedFieldSerializer(many=True, read_only=True)
+    # TODO: make this only return the full tags when a "show all tags"
+    # query param is passed to the view:
+    tags = TagSerializer(many=True, read_only=True)
     submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True)
 
     load_from_url = serializers.URLField(write_only=True, required=False)
