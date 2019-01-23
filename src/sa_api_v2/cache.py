@@ -474,6 +474,21 @@ class SubmissionCache (Cache):
         return prefixes
 
 
+class PlaceTagCache (Cache):
+    dataset_cache = DataSetCache()
+    place_cache = PlaceCache()
+
+    def get_instance_params(self, place_tag_obj):
+        params = self.place_cache.get_cached_instance_params(
+            place_tag_obj.place_id,
+            lambda: place_tag_obj.place
+        ).copy()
+        params.update({
+            'place_tag_id': place_tag_obj.pk,
+        })
+        return params
+
+
 class ActionCache (Cache):
     def clear_instance(self, obj):
         keys = cache_buffer.get('action_keys') or set()

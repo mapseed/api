@@ -4,6 +4,7 @@ from django.conf import settings
 INCLUDE_INVISIBLE_PARAM = 'include_invisible'
 INCLUDE_PRIVATE_PARAM = 'include_private'
 INCLUDE_SUBMISSIONS_PARAM = 'include_submissions'
+INCLUDE_TAGS_PARAM = 'include_tags'
 NEAR_PARAM = 'near'
 DISTANCE_PARAM = 'distance_lt'
 BBOX_PARAM = 'bounds'

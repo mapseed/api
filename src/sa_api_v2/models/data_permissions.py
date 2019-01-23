@@ -16,6 +16,7 @@ class DataPermissionManager (models.Manager):
     def add_permission(self, submission_set, can_create, can_retrieve, can_update, can_destroy, can_access_protected=False, priority=None):
         PermModel = self.model
         return self.add(PermModel(
+            # TODO: rename this to 'resource'
             submission_set=submission_set,
             can_create=can_create,
             can_retrieve=can_retrieve,
@@ -29,7 +30,11 @@ class DataPermission (CloneableModelMixin, CacheClearingModel, models.Model):
     """
     Rules for what permissions a given authentication method affords.
     """
-    submission_set = models.CharField(max_length=128, blank=True, help_text='Either the name of a submission set (e.g., "comments"), or "places". Leave blank to refer to all things.')
+    # TODO: rename this 'submission_set' to 'resource'
+    # TODO: enable resources with selectors like
+    # "tags:3>*" or "tags:3>5>*". That way, group will have access to
+    # that tag, and any of its children.
+    submission_set = models.CharField(max_length=128, blank=True, help_text='Either the name of a submission set (e.g., "comments"), "tags", or "places". Leave blank to refer to all things.')
     can_retrieve = models.BooleanField(default=True)
     can_create = models.BooleanField(default=False)
     can_update = models.BooleanField(default=False)
@@ -143,22 +148,24 @@ def create_data_permissions(sender, instance, created, **kwargs):
 post_save.connect(create_data_permissions, sender=DataSet, dispatch_uid="dataset-create-permissions")
 
 
-def any_allow(permissions, do_action, submission_set, protected=False):
+def any_allow(permissions, do_action, resource, protected=False):
     """
     Check whether any of the data permissions in the managed set allow the
     action on a submission set with the given name. Specify whether the action
     is on protected data.
     """
     for permission in permissions:
-        if (permission.submission_set in (submission_set, '*')
+        # TODO: rename this to permission.resource and handle a "tags:1>3>*" use case
+        if (permission.submission_set in (resource, '*')
             and getattr(permission, 'can_' + do_action, False)
             and (permission.can_access_protected or not protected)):
             return True
     return False
 
-def check_data_permission(user, client, place_id, do_action, dataset, submission_set, protected=False):
+
+def check_data_permission(user, client, place_id, do_action, dataset, resource, protected=False):
     """
-    Check whether the given user has permission on the submission_set in
+    Check whether the given user has permission on the resource in
     the context of the given client (e.g., an API key or an origin). Specify
     whether the permission is for protected data.
     """
@@ -173,20 +180,20 @@ def check_data_permission(user, client, place_id, do_action, dataset, submission
         return True
 
     # Start with the dataset permission
-    if dataset and any_allow(dataset.permissions.all(), do_action, submission_set, protected):
+    if dataset and any_allow(dataset.permissions.all(), do_action, resource, protected):
         return True
 
     # Then the client permission
     if client is not None:
         if (client.dataset == dataset and
-            any_allow(client.permissions.all(), do_action, submission_set, protected)):
+            any_allow(client.permissions.all(), do_action, resource, protected)):
             return True
 
     # Next, check the user's groups
     if user is not None and user.is_authenticated():
         for group in user._groups.all():
             if (dataset and group.dataset_id == dataset.id and
-                any_allow(group.permissions.all(), do_action, submission_set, protected)):
+                any_allow(group.permissions.all(), do_action, resource, protected)):
                 return True
 
     # Finally, check place permissions
@@ -199,4 +206,3 @@ def check_data_permission(user, client, place_id, do_action, dataset, submission
             return True
 
     return False
-
