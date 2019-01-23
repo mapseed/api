@@ -524,7 +524,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #
 
         # TODO: https://github.com/mapseed/api/issues/137
-        with self.assertNumQueries(15):
+        with self.assertNumQueries(16):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -586,7 +586,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #
 
         # TODO: https://github.com/mapseed/api/issues/137
-        with self.assertNumQueries(15):
+        with self.assertNumQueries(16):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -645,7 +645,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #
 
         # TODO: https://github.com/mapseed/api/issues/137
-        with self.assertNumQueries(24):
+        with self.assertNumQueries(26):
             response = self.view(anon_request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
             response = self.view(auth_request, **self.request_kwargs)
@@ -1784,7 +1784,7 @@ class TestPlaceListView (APITestMixin, TestCase):
         request = factory.get(path)
 
         # TODO: https://github.com/mapseed/api/issues/137
-        with self.assertNumQueries(17):
+        with self.assertNumQueries(22):
             view(request, **request_kwargs)
 
         # Second call should hardly hit the database
@@ -1805,7 +1805,7 @@ class TestPlaceListView (APITestMixin, TestCase):
         request = factory.get(path)
 
         # TODO: https://github.com/mapseed/api/issues/137
-        with self.assertNumQueries(11):
+        with self.assertNumQueries(16):
             view(request, **request_kwargs)
 
 
