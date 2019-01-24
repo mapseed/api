@@ -45,7 +45,8 @@ class PlaceTag(TimeStampedModel):
         super(PlaceTag, self).save(*args, **kwargs)
 
     def clean(self):
-        if self.tag.dataset.id != self.place.dataset.id:
+        if hasattr(self, 'tag') and hasattr(self, 'place') and\
+           self.tag.dataset.id != self.place.dataset.id:
             raise ValidationError("The Tag must come from the same DataSet as the Place.")
 
     class Meta:

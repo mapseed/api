@@ -305,6 +305,15 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
 class InlinePlaceTagAdmin(admin.StackedInline):
     model = models.PlaceTag
 
+    def get_formset(self, request, obj=None, **kwargs):
+        self.parent_obj = obj
+        return super(InlinePlaceTagAdmin, self).get_formset(request, obj, **kwargs)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "tag":
+            kwargs["queryset"] = models.Tag.objects.filter(dataset=self.parent_obj.dataset)
+            return super(InlinePlaceTagAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+
 
 class PlaceAdmin(SubmittedThingAdmin):
     model = models.Place
