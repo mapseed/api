@@ -38,15 +38,7 @@ urlpatterns = patterns('sa_api_v2',
         views.DataSnapshotInstanceView.as_view(),
         name='dataset-snapshot-instance'),
 
-    # ad-hoc data
-
-    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)/(?P<submission_id>\d+)$',
-        views.SubmissionInstanceView.as_view(),
-        name='submission-detail'),
-    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)(?:/(?P<pk_list>(?:\d+,)+\d+))?$',
-        views.SubmissionListView.as_view(),
-        name='submission-list'),
-
+    # place tags
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/tags/(?P<place_tag_id>\d+)$',
         views.PlaceTagInstanceView.as_view(),
         name='place-tag-detail'),
@@ -54,6 +46,15 @@ urlpatterns = patterns('sa_api_v2',
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/tags$',
         views.PlaceTagListView.as_view(),
         name='place-tag-list'),
+
+    # submission sets (votes, comments)
+
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)/(?P<submission_id>\d+)$',
+        views.SubmissionInstanceView.as_view(),
+        name='submission-detail'),
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)(?:/(?P<pk_list>(?:\d+,)+\d+))?$',
+        views.SubmissionListView.as_view(),
+        name='submission-list'),
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)$',
         views.PlaceInstanceView.as_view(),

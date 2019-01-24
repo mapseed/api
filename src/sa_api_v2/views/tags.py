@@ -85,6 +85,12 @@ class PlaceTagInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Re
 
     **Authentication**: Basic, session, or key auth *(required)*
 
+    PATCH
+    ---
+    Update a PlaceTag
+
+    **Authentication**: Basic, session, or key auth *(required)*
+
     DELETE
     ------
     Delete a PlaceTag
@@ -146,12 +152,6 @@ class PlaceTagListView (CachedResourceMixin, OwnedResourceMixin,
     serializer_class = serializers.PlaceTagSerializer
     pagination_class = serializers.MetadataPagination
     resource_id = 'tags'
-    # pagination_class = serializers.FeatureCollectionPagination
-    # renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
-    # parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
-
-    # Overriding create so we can sanitize submitted fields, which may
-    # contain raw HTML intended to be rendered in the client
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
