@@ -119,6 +119,7 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
         'place-detail':
         '/{owner_username}/datasets/{dataset_slug}/places/{place_id}',
         'place-list': '/{owner_username}/datasets/{dataset_slug}/places',
+        'place-tag-list': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}/tags',
 
         'dataset-detail': '/{owner_username}/datasets/{dataset_slug}',
         'user-detail': '/{owner_username}',
@@ -324,6 +325,11 @@ class TagIdentityField (serializers.HyperlinkedIdentityField):
             'tag_id': obj.pk
         }
         return reverse(view_name, kwargs=url_kwargs, request=request, format=format)
+
+
+class PlaceTagListIdentityField (ShareaboutsIdentityField):
+    url_arg_names = ('owner_username', 'dataset_slug', 'place_id',)
+    view_name = 'place-tag-list'
 
 
 class PlaceTagIdentityField (serializers.HyperlinkedIdentityField):
@@ -892,11 +898,12 @@ class BasePlaceSerializer (SubmittedThingSerializer,
         Get a mapping from place id to a tag summary dictionary.
         Get this for the entire dataset at once.
         """
+        url_field = PlaceTagListIdentityField()
+        url_field.context = self.context
+        url = url_field.to_representation(place)
         return {
-            # TODO: get the url for our tags here:
-            # 'url': tags.url,
-            'name': 'tags',
-            'length': place.tags.count(),
+            'url': url,
+            'length': place.tags.count()
         }
 
     def get_detailed_tags(self, place):
