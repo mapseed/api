@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ValidationError
 from django.core.cache import cache as django_cache
 import json
 from ..cors.models import Origin
@@ -19,8 +20,8 @@ from ..views import (
     PlaceTagInstanceView,
     PlaceTagListView
 )
-# ./src/manage.py test sa_api_v2.tests.test_tag_views:TestPlaceTagInstanceView.test_GET_response
-# ./src/manage.py test sa_api_v2.tests.test_views:TestPlaceListView.test_POST_invisible_response
+# ./src/manage.py test -s sa_api_v2.tests.test_tag_views:TestPlaceTagListView.test_POST_response_with_invalid_tag
+# ./src/manage.py test -s sa_api_v2.tests.test_views:TestPlaceListView.test_POST_invisible_response
 
 
 class TestPlaceTagInstanceView (APITestMixin, TestCase):
@@ -352,10 +353,6 @@ class TestPlaceTagListView (APITestMixin, TestCase):
         self.origin = Origin.objects.create(pattern='def', dataset=self.dataset)
         Origin.objects.create(pattern='def2', dataset=self.dataset)
 
-        self.unauthorized_user = User.objects.create_user(
-            username='temp_user',
-            password='lkjasdf'
-        )
         self.authorized_user = User.objects.create_user(
             username='temp_user2',
             password='lkjasdf'
@@ -371,6 +368,11 @@ class TestPlaceTagListView (APITestMixin, TestCase):
             submission_set='tags',
             can_create=True,
         )
+
+        self.unauthorized_user = User.objects.create_user(
+            username='temp_user',
+            password='lkjasdf'
+        )
         unauthorized_group = Group.objects.create(
             dataset=self.dataset,
             name='badgroup'
@@ -381,6 +383,24 @@ class TestPlaceTagListView (APITestMixin, TestCase):
             group=unauthorized_group,
             # TODO: rename this to 'resource':
             submission_set='tags',
+        )
+        self.other_dataset = DataSet.objects.create(slug='ds2', owner=self.owner)
+
+        self.other_tag = Tag.objects.create(
+            name="other status",
+            dataset=self.other_dataset,
+        )
+
+        other_group = Group.objects.create(
+            dataset=self.other_dataset,
+            name='othergroup'
+        )
+        other_group.submitters.add(self.authorized_user)
+        GroupPermission.objects.create(
+            group=other_group,
+            # TODO: rename this to 'resource':
+            submission_set='tags',
+            can_create=True,
         )
 
         self.request_kwargs = {
@@ -514,3 +534,29 @@ class TestPlaceTagListView (APITestMixin, TestCase):
         # Check that we actually created a submission and set
         final_num_submissions = PlaceTag.objects.all().count()
         self.assertEqual(final_num_submissions, start_num_submissions + 1)
+
+    def test_POST_response_with_invalid_tag(self):
+        tag_url = 'http://testserver' + reverse('tag-detail', args=[
+            self.owner.username,
+            self.other_dataset.slug,
+            self.other_tag.id,
+        ])
+        place_url = 'http://testserver' + reverse('place-detail', args=[
+            self.owner.username,
+            self.dataset.slug,
+            self.place.id,
+        ])
+        data = json.dumps({
+          'note': "this is a comment",
+          'tag': tag_url,
+          'place': place_url,
+        })
+
+        #
+        # Trying to add a Tag to a Place that comes from a different
+        # dataset should give us a ValidationError:
+        #
+        request = self.factory.post(self.path, data=data, content_type='application/json')
+        request.user = self.authorized_user
+        with self.assertRaises(ValidationError):
+            self.view(request, **self.request_kwargs)

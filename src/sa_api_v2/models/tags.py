@@ -1,6 +1,7 @@
 import re
 from closuretree.models import ClosureModel
 from django.contrib.gis.db import models
+from django.core.exceptions import ValidationError
 from .core import DataSet, Place, TimeStampedModel
 from .. import cache
 from .profiles import User
@@ -38,6 +39,14 @@ class PlaceTag(TimeStampedModel):
     note = models.TextField(blank=True)
 
     cache = cache.PlaceTagCache()
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super(PlaceTag, self).save(*args, **kwargs)
+
+    def clean(self):
+        if self.tag.dataset.id != self.place.dataset.id:
+            raise ValidationError("The Tag must come from the same DataSet as the Place.")
 
     class Meta:
         app_label = 'sa_api_v2'
