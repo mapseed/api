@@ -2,7 +2,8 @@ from django.conf import settings
 
 # Querystring Parameter Names
 INCLUDE_INVISIBLE_PARAM = 'include_invisible'
-INCLUDE_PRIVATE_PARAM = 'include_private'
+INCLUDE_PRIVATE_PLACES_PARAM = 'include_private_places'
+INCLUDE_PRIVATE_FIELDS_PARAM = 'include_private_fields'
 INCLUDE_SUBMISSIONS_PARAM = 'include_submissions'
 INCLUDE_TAGS_PARAM = 'include_tags'
 NEAR_PARAM = 'near'

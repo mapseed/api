@@ -1,6 +1,10 @@
 from .. import apikey
 from rest_framework import (permissions)
-from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM)
+from ..params import (
+    INCLUDE_INVISIBLE_PARAM,
+    INCLUDE_PRIVATE_FIELDS_PARAM,
+    INCLUDE_PRIVATE_PLACES_PARAM
+)
 from .. import models
 ###############################################################################
 #
@@ -77,7 +81,11 @@ class IsLoggedInOwnerOrPublicDataOnly(permissions.BasePermission):
         if request.method == 'OPTIONS':
             return True
 
-        private_data_flags = [INCLUDE_PRIVATE_PARAM, INCLUDE_INVISIBLE_PARAM]
+        private_data_flags = [
+            INCLUDE_PRIVATE_PLACES_PARAM,
+            INCLUDE_PRIVATE_FIELDS_PARAM,
+            INCLUDE_INVISIBLE_PARAM
+        ]
         if not any([flag in request.GET for flag in private_data_flags]):
             return True
 
@@ -168,8 +176,11 @@ class IsAllowedByDataPermissions(permissions.BasePermission):
             data_type = 'places'
 
         # Check whether we have to get permission for protected data
-        protected = (INCLUDE_INVISIBLE_PARAM in request.GET or
-                     INCLUDE_PRIVATE_PARAM in request.GET)
+        protected = (
+            INCLUDE_INVISIBLE_PARAM in request.GET or
+            INCLUDE_PRIVATE_FIELDS_PARAM in request.GET or
+            INCLUDE_PRIVATE_PLACES_PARAM in request.GET
+        )
 
         user = getattr(request, 'user', None)
         client = getattr(request, 'client', None)

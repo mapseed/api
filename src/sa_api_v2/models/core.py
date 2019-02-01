@@ -269,6 +269,7 @@ class Place (SubmittedThing):
     geometry = models.GeometryField()
 
     objects = GeoSubmittedThingManager()
+    private = models.BooleanField(default=False, blank=True, db_index=True)
     cache = cache.PlaceCache()
     # previous_version = 'sa_api_v1.models.Place'
 

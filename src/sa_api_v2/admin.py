@@ -434,5 +434,5 @@ admin.site.register(models.Group, GroupAdmin)
 admin.site.register(models.Webhook, WebhookAdmin)
 admin.site.register(models.PlaceEmailTemplate, PlaceEmailTemplateAdmin)
 
-admin.site.site_header = 'Shareabouts API Server Administration'
-admin.site.site_title = 'Shareabouts API Server'
+admin.site.site_header = 'Mapseed API Server Administration'
+admin.site.site_title = 'Mapseed API Server'

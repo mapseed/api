@@ -200,7 +200,10 @@ def check_data_permission(user, client, place_id, do_action, dataset, resource, 
                 any_allow(group.permissions.all(), do_action, resource, protected)):
                 return True
 
-    # Finally, check place permissions
+    # Finally, check place permissions:
+    # 1) If user is the place's submitter and trying to Update/Delete the place, then allow
+    # 2) if the place is private, and user doesn't have protected privileges (checked above), and user isn't the
+    # submitter, then don't allow
     if place_id is not None and user is not None and user.is_authenticated:
         target_place = Place.objects.get(id=place_id)
         submitter = getattr(target_place, 'submitter', None)
@@ -208,5 +211,7 @@ def check_data_permission(user, client, place_id, do_action, dataset, resource, 
         user_id = getattr(user, 'id', None)
         if place_submitter_id == user_id:
             return True
+        if target_place.private:
+            return False
 
     return False
