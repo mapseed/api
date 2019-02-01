@@ -20,13 +20,13 @@ from .models import check_data_permission
 from .params import (
     INCLUDE_INVISIBLE_PARAM,
     INCLUDE_TAGS_PARAM,
-    INCLUDE_PRIVATE_PARAM,
+    INCLUDE_PRIVATE_FIELDS_PARAM,
     INCLUDE_SUBMISSIONS_PARAM,
     FORMAT_PARAM
 )
 
 import logging
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 # TODO: renmae this into serializers/core.py and make a separate serializers/__init__.py
 
@@ -449,10 +449,9 @@ class DataBlobProcessor (EmptyModelSerializer):
         blob = data.pop('data')
 
         blob_data = json.loads(blob)
-        request = self.context['request']
 
         # Did the user not ask for private data? Remove it!
-        if not self.is_flag_on(INCLUDE_PRIVATE_PARAM):
+        if not self.is_flag_on(INCLUDE_PRIVATE_FIELDS_PARAM):
             for key in blob_data.keys():
                 if key.startswith('private'):
                     del blob_data[key]
@@ -852,6 +851,7 @@ class BasePlaceSerializer (SubmittedThingSerializer,
     geometry = GeometryField(format='wkt')
     attachments = AttachmentListSerializer(read_only=True, many=True)
     submitter = SimpleUserSerializer(required=False, allow_null=True)
+    private = serializers.BooleanField(required=False, default=False)
 
     class Meta:
         model = models.Place
@@ -972,6 +972,11 @@ class BasePlaceSerializer (SubmittedThingSerializer,
             'created_datetime': obj.created_datetime.isoformat() if obj.created_datetime else None,
             'updated_datetime': obj.updated_datetime.isoformat() if obj.updated_datetime else None,
         }
+        # If the place is public, don't inlude the 'private' attribute
+        # in the serialized representation. This minimizes the JSON
+        # payload:
+        if obj.private:
+            data['private'] = obj.private
 
         if 'url' in fields:
             field = fields['url']
@@ -1196,8 +1201,6 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
     owner = UserRelatedField(read_only=True)
 
     places = DataSetPlaceSetSummarySerializer(source='*', read_only=True)
-    # TODO: make this only return the full tags when a "show all tags"
-    # query param is passed to the view:
     tags = TagSerializer(many=True, read_only=True)
     submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True)
 

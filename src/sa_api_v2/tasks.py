@@ -64,7 +64,8 @@ def store_bulk_data(request_id):
         datarequest.dataset,
         datarequest.submission_set,
         include_submissions=datarequest.include_submissions,
-        include_private=datarequest.include_private,
+        include_private_fields=datarequest.include_private_fields,
+        include_private_places=datarequest.include_private_places,
         include_invisible=datarequest.include_invisible)
 
     # Store the information

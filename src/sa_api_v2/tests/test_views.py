@@ -11,6 +11,10 @@ import json
 import mock
 from StringIO import StringIO
 from ..models import User, DataSet, Place, Submission, Attachment, Action, Group, DataIndex, GroupPermission
+from ..params import (
+    INCLUDE_PRIVATE_FIELDS_PARAM,
+    INCLUDE_PRIVATE_PLACES_PARAM,
+)
 from ..cache import cache_buffer
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
@@ -291,7 +295,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #
         # View should 401 when not allowed to request private data (not authenticated)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -303,7 +307,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #
         # View should 403 when not allowed to request private data (api key)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.META[KEY_HEADER] = self.apikey.key
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -316,7 +320,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #
         # View should 403 when not allowed to request private data (origin)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.META['HTTP_ORIGIN'] = self.ds_origin.pattern
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -329,7 +333,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #
         # View should 403 when not allowed to request private data (not owner)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.user = User.objects.create(username='new_user', password='password')
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -342,7 +346,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #
         # View should return private data when owner is logged in (Session Auth)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.user = self.owner
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -358,7 +362,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #
         # View should return private data when owner is logged in (Basic Auth)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -947,10 +951,10 @@ class TestPlaceListView (APITestMixin, TestCase):
 
         self.ds_origin = Origin.objects.create(pattern='http://openplans.github.com', dataset=self.dataset)
 
-        dataset2 = DataSet.objects.create(slug='ds2', owner=self.owner)
-        place2 = Place.objects.create(
-          dataset=dataset2,
-          geometry='POINT(3 4)',
+        self.private_place = Place.objects.create(
+            dataset=self.dataset,
+            geometry='POINT(3 4)',
+            private=True,
         )
 
         self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
@@ -1118,7 +1122,10 @@ class TestPlaceListView (APITestMixin, TestCase):
 
         # Check that the request was successful
         self.assertStatusCode(response, 200)
-        self.assertEqual(len(data['features']), self.dataset.places.filter(visible=True).count())
+        self.assertEqual(
+            len(data['features']),
+            self.dataset.places.filter(visible=True, private=False).count()
+        )
 
     def test_GET_filtered_response(self):
         Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)', data=json.dumps({'foo': 'bar', 'name': 1})),
@@ -1250,7 +1257,7 @@ class TestPlaceListView (APITestMixin, TestCase):
         #
         # View should 401 when not allowed to request private data (not authenticated)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -1262,7 +1269,7 @@ class TestPlaceListView (APITestMixin, TestCase):
         #
         # View should 403 when not allowed to request private data (api key)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.META[KEY_HEADER] = self.apikey.key
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -1275,8 +1282,22 @@ class TestPlaceListView (APITestMixin, TestCase):
         #
         # View should 403 when not allowed to request private data (not owner)
         #
-        request = self.factory.get(self.path + '?include_private')
-        request.user = User.objects.create(username='new_user', password='password')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
+        unauthorized_user = User.objects.create(username='new_user', password='password')
+        request.user = unauthorized_user
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertStatusCode(response, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private places (not owner)
+        #
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_PLACES_PARAM)
+        request.user = unauthorized_user
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -1288,7 +1309,7 @@ class TestPlaceListView (APITestMixin, TestCase):
         #
         # View should return private data when owner is logged in (Session Auth)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.user = self.owner
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -1304,7 +1325,7 @@ class TestPlaceListView (APITestMixin, TestCase):
         #
         # View should return private data when owner is logged in (Basic Auth)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -1397,6 +1418,35 @@ class TestPlaceListView (APITestMixin, TestCase):
         response = self.view(request, **self.request_kwargs)
         self.assertStatusCode(response, 403)
 
+    def test_GET_response_with_private_place(self):
+        #
+        # View should not return private places normally
+        #
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+
+        # Check that the private data is not in the properties
+        # self.assertNotIn('private-secrets', data['features'][0]['properties'])
+        self.assertEquals(data['features'][0]['id'], self.place.id)
+
+        #
+        # View should return private places when user is owner (Session Auth)
+        #
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_PLACES_PARAM)
+        request.user = self.owner
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+
+        # Check that the private place
+        private_place = next((x for x in data['features'] if x['id'] == self.private_place.id), None)
+        self.assertIsNotNone(private_place)
 
     def test_PUT_creates_in_bulk(self):
         # Create a couple bogus places so that we can be sure we're not
@@ -1691,13 +1741,14 @@ class TestPlaceListView (APITestMixin, TestCase):
         self.assertStatusCode(response, 200)
         self.assertEqual(len(data['features']), 2)
 
-    def test_POST_invisible_response(self):
+    def test_POST_invisible_private_response(self):
         place_data = json.dumps({
             'properties': {
                 'submitter_name': 'Andy',
                 'type': 'Park Bench',
                 'private-secrets': 'The mayor loves this bench',
-                'visible': False
+                'visible': False,
+                'private': True
             },
             'type': 'Feature',
             'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
@@ -1713,6 +1764,7 @@ class TestPlaceListView (APITestMixin, TestCase):
 
         # Check that visible is false
         self.assertEqual(data.get('properties').get('visible'), False)
+        self.assertEqual(data.get('properties').get('private'), True)
 
     def test_POST_response_like_XDomainRequest(self):
         place_data = json.dumps({
@@ -1936,7 +1988,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         #
         # View should 401 when not allowed to request private data (not authenticated)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -1948,7 +2000,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         #
         # View should 403 when not allowed to request private data (api key)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.META[KEY_HEADER] = self.apikey.key
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -1961,7 +2013,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         #
         # View should 403 when not allowed to request private data (not owner)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.user = User.objects.create(username='new_user', password='password')
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -1974,7 +2026,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         #
         # View should return private data when owner is logged in (Session Auth)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.user = self.owner
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -1990,7 +2042,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         #
         # View should return private data when owner is logged in (Basic Auth)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -2348,7 +2400,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
         #
         # View should 401 when not allowed to request private data (not authenticated)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -2360,7 +2412,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
         #
         # View should 403 when not allowed to request private data (api key)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.META[KEY_HEADER] = self.apikey.key
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -2373,7 +2425,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
         #
         # View should 403 when not allowed to request private data (not owner)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.user = User.objects.create(username='new_user', password='password')
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -2386,7 +2438,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
         #
         # View should return private data when owner is logged in (Session Auth)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.user = self.owner
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -2402,7 +2454,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
         #
         # View should return private data when owner is logged in (Basic Auth)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -3012,7 +3064,7 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
         #
         # View should 401 when not allowed to request private data (not authenticated)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -3024,7 +3076,7 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
         #
         # View should 403 when not allowed to request private data (api key)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.META[KEY_HEADER] = self.apikey.key
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -3037,7 +3089,7 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
         #
         # View should 403 when not allowed to request private data (not owner)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.user = User.objects.create(username='new_user', password='password')
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -3050,7 +3102,7 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
         #
         # View should return private data when owner is logged in (Session Auth)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.user = self.owner
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -3067,7 +3119,7 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
         #
         # View should return private data when owner is logged in (Basic Auth)
         #
-        request = self.factory.get(self.path + '?include_private')
+        request = self.factory.get(self.path + '?' + INCLUDE_PRIVATE_FIELDS_PARAM)
         request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)

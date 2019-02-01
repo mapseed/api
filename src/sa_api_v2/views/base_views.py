@@ -37,10 +37,19 @@ from .. import utils
 from .content_negotiation import ShareaboutsContentNegotiation
 from ..cache import cache_buffer
 from ..params import (
-    INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
-    INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, BBOX_PARAM,
-    TEXTSEARCH_PARAM, FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM,
-    CALLBACK_PARAM, INCLUDE_TAGS_PARAM
+    INCLUDE_INVISIBLE_PARAM,
+    INCLUDE_PRIVATE_FIELDS_PARAM,
+    INCLUDE_PRIVATE_PLACES_PARAM,
+    INCLUDE_SUBMISSIONS_PARAM,
+    NEAR_PARAM,
+    DISTANCE_PARAM,
+    BBOX_PARAM,
+    TEXTSEARCH_PARAM,
+    FORMAT_PARAM,
+    PAGE_PARAM,
+    PAGE_SIZE_PARAM,
+    CALLBACK_PARAM,
+    INCLUDE_TAGS_PARAM
 )
 from functools import wraps
 from itertools import groupby, count
@@ -224,6 +233,7 @@ class CorsEnabledMixin (object):
 
         return response
 
+
 class FilteredResourceMixin (object):
     """
     A view mixin that filters queryset of ModelWithDataBlob results based on
@@ -237,10 +247,23 @@ class FilteredResourceMixin (object):
             queryset = queryset.filter(pk__in=pk_list)
 
         # These filters will have been applied when constructing the queryset
-        special_filters = set([FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM(),
-                               INCLUDE_SUBMISSIONS_PARAM, INCLUDE_TAGS_PARAM, INCLUDE_PRIVATE_PARAM,
-                               INCLUDE_INVISIBLE_PARAM, NEAR_PARAM, DISTANCE_PARAM,
-                               TEXTSEARCH_PARAM, BBOX_PARAM, CALLBACK_PARAM(self)])
+        special_filters = set([
+            FORMAT_PARAM,
+            PAGE_PARAM,
+            PAGE_SIZE_PARAM(),
+            INCLUDE_SUBMISSIONS_PARAM,
+            INCLUDE_TAGS_PARAM,
+            INCLUDE_PRIVATE_FIELDS_PARAM,
+            INCLUDE_PRIVATE_PLACES_PARAM,
+
+            INCLUDE_INVISIBLE_PARAM,
+            NEAR_PARAM,
+            DISTANCE_PARAM,
+
+            TEXTSEARCH_PARAM,
+            BBOX_PARAM,
+            CALLBACK_PARAM(self)
+        ])
 
         # Filter by full-text search
         textsearch_filter = self.request.GET.get(TEXTSEARCH_PARAM, None)
@@ -683,11 +706,15 @@ class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, O
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request invisible resoruces.
 
-      * `include_private` *(only direct auth)*
+      * `include_private_fields` *(only direct auth)*
 
         Show private data attributes on the place, and on any submissions if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request private attributes.
+
+      * `include_private_places` *(only direct auth)*
+
+        Show private places.
 
     PUT
     ---
@@ -774,7 +801,7 @@ class CompletePlaceListRequestView (OwnedResourceMixin, generics.RetrieveAPIView
         dataset = self.get_dataset()
         cache_key = dataset.cache.get_bulk_data_cache_key(dataset.pk, 'places',
             include_submissions=(INCLUDE_SUBMISSIONS_PARAM in request.GET),
-            include_private=(INCLUDE_PRIVATE_PARAM in request.GET),
+            include_private_fields=(INCLUDE_PRIVATE_FIELDS_PARAM in request.GET),
             include_invisible=(INCLUDE_INVISIBLE_PARAM in request.GET))
         result = super(CompletePlaceListRequestView, self).get(request, *args, **kwargs)
         return result
@@ -784,7 +811,15 @@ class PlaceListMixin (object):
     pass
 
 
-class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, EmailTemplateMixin, bulk_generics.ListCreateBulkUpdateAPIView):
+class PlaceListView (
+        Sanitizer,
+        CachedResourceMixin,
+        LocatedResourceMixin,
+        OwnedResourceMixin,
+        FilteredResourceMixin,
+        EmailTemplateMixin,
+        bulk_generics.ListCreateBulkUpdateAPIView
+):
     """
 
     GET
@@ -811,11 +846,15 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request invisible resoruces.
 
-      * `include_private` *(only direct auth)*
+      * `include_private_fields` *(only direct auth)*
 
         Show private data attributes on the place, and on any submissions if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request private attributes.
+
+      * `include_private_places` *(only direct auth)*
+
+        Show private places.
 
       * `near=<reference_geometry>`
 
@@ -943,6 +982,11 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                 'tags__submitter',
             )
 
+        if INCLUDE_PRIVATE_PLACES_PARAM not in self.request.GET:
+            queryset = queryset.filter(
+                private=False,
+            )
+
         return queryset
 
     def trigger_webhooks(self, webhooks, obj):
@@ -953,7 +997,8 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
         # Update request to include private data. We need everything since
         # we can't PATCH on the API yet.
         temp_get = self.request.GET.copy()
-        temp_get['include_private'] = 'on'
+        temp_get['include_private_places'] = 'on'
+        temp_get['include_private_fields'] = 'on'
         self.request.GET = temp_get
         serializer.context = {'request': self.request}
 
@@ -992,7 +1037,7 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
         this flag to view an invisible submission. Only the dataset owner is
         allowed to request invisible resoruces.
 
-      * `include_private` *(only direct auth)*
+      * `include_private_fields` *(only direct auth)*
 
         Show private data attributes on the submission. Only the dataset owner
         is allowed to request private attributes.
@@ -1057,7 +1102,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request invisible resoruces.
 
-      * `include_private` *(only direct auth)*
+      * `include_private_fields` *(only direct auth)*
 
         Show private data attributes on the place, and on any submissions if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
@@ -1161,7 +1206,7 @@ class DataSetSubmissionListView (CachedResourceMixin, ProtectedOwnedResourceMixi
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request invisible resoruces.
 
-      * `include_private` *(only direct auth)*
+      * `include_private_fields` *(only direct auth)*
 
         Show private data attributes on the place, and on any submissions if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
@@ -1481,7 +1526,7 @@ class DataSetListView (DataSetListMixin, ProtectedOwnedResourceMixin, generics.L
         # Make sure we would have access if we were getting that whole thing
         fake_request = RequestFactory().get(
             path=reverse('dataset-detail', args=[original.owner.username, original.slug]),
-            data=dict(include_invisible=True, include_private=True))
+            data=dict(include_invisible=True, include_private_fields=True))
         self.check_object_permissions(fake_request, original)
 
         # Clone the object using the override values from the request. Only
