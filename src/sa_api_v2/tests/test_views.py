@@ -953,7 +953,7 @@ class TestPlaceListView (APITestMixin, TestCase):
 
         self.private_place = Place.objects.create(
             dataset=self.dataset,
-            geometry='POINT(3 4)',
+            geometry='POINT(7 8)',
             private=True,
         )
 
@@ -1765,6 +1765,10 @@ class TestPlaceListView (APITestMixin, TestCase):
         # Check that visible is false
         self.assertEqual(data.get('properties').get('visible'), False)
         self.assertEqual(data.get('properties').get('private'), True)
+
+        # Check that the private place doesn't generate an action:
+        place = Place.objects.get(id=data.get('id'))
+        self.assertEquals(place.actions.count(), 0)
 
     def test_POST_response_like_XDomainRequest(self):
         place_data = json.dumps({

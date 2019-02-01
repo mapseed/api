@@ -910,8 +910,11 @@ class PlaceListView (
             user = self.request.user
             if 'submitter' in serializer.validated_data:
                 user = serializer.validated_data['submitter']
+            # if the place is private, don't generate an Action:
+            silent = serializer.validated_data.get('private', False)
             self.object = serializer.save(
                 force_insert=True,
+                silent=silent,
                 submitter=user if user is not None and user.is_authenticated() else None,
                 dataset=self.get_dataset()
             )
