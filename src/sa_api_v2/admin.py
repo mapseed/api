@@ -143,6 +143,10 @@ class InlineApiKeyAdmin(admin.StackedInline):
     edit_url.allow_tags = True
 
 
+class InlineTagAdmin(admin.StackedInline):
+    model = models.Tag
+
+
 class InlineOriginAdmin(admin.StackedInline):
     model = Origin
     raw_id_fields = ['place_email_template']
@@ -237,7 +241,15 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
     change_actions = ('clone_dataset', 'clear_cache')
     raw_id_fields = ('owner',)
     readonly_fields = ('api_path',)
-    inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin, InlineWebhookAdmin]
+    inlines = [
+        InlineDataIndexAdmin,
+        InlineDataSetPermissionAdmin,
+        InlineApiKeyAdmin,
+        InlineOriginAdmin,
+        InlineGroupAdmin,
+        InlineTagAdmin,
+        InlineWebhookAdmin
+    ]
 
     def clear_cache(self, request, obj):
         obj.clear_instance_cache()
@@ -290,8 +302,25 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
         super(DataSetAdmin, self).save_model(request, obj, form, change)
 
 
+class InlinePlaceTagAdmin(admin.StackedInline):
+    model = models.PlaceTag
+
+    def get_formset(self, request, obj=None, **kwargs):
+        self.parent_obj = obj
+        return super(InlinePlaceTagAdmin, self).get_formset(request, obj, **kwargs)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "tag":
+            kwargs["queryset"] = models.Tag.objects.filter(dataset=self.parent_obj.dataset)
+            return super(InlinePlaceTagAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+
+
 class PlaceAdmin(SubmittedThingAdmin):
     model = models.Place
+    inlines = [
+        InlinePlaceTagAdmin,
+        InlineAttachmentAdmin
+    ]
 
     def api_path(self, instance):
         path = reverse('place-detail', args=[instance.dataset.owner, instance.dataset.slug, instance.id])

@@ -3,7 +3,6 @@ from django.contrib.gis.db import models
 from django.contrib.gis.db.models import query
 from django.conf import settings
 from django.core.files.storage import get_storage_class
-from django.db.models.signals import post_save
 from django.utils.timezone import now
 from .. import cache
 from .. import utils

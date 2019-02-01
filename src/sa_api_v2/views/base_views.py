@@ -36,10 +36,12 @@ from .. import tasks
 from .. import utils
 from .content_negotiation import ShareaboutsContentNegotiation
 from ..cache import cache_buffer
-from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
+from ..params import (
+    INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, BBOX_PARAM,
     TEXTSEARCH_PARAM, FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM,
-    CALLBACK_PARAM)
+    CALLBACK_PARAM, INCLUDE_TAGS_PARAM
+)
 from functools import wraps
 from itertools import groupby, count
 from collections import defaultdict
@@ -236,9 +238,9 @@ class FilteredResourceMixin (object):
 
         # These filters will have been applied when constructing the queryset
         special_filters = set([FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM(),
-            INCLUDE_SUBMISSIONS_PARAM, INCLUDE_PRIVATE_PARAM,
-            INCLUDE_INVISIBLE_PARAM, NEAR_PARAM, DISTANCE_PARAM,
-            TEXTSEARCH_PARAM, BBOX_PARAM, CALLBACK_PARAM(self)])
+                               INCLUDE_SUBMISSIONS_PARAM, INCLUDE_TAGS_PARAM, INCLUDE_PRIVATE_PARAM,
+                               INCLUDE_INVISIBLE_PARAM, NEAR_PARAM, DISTANCE_PARAM,
+                               TEXTSEARCH_PARAM, BBOX_PARAM, CALLBACK_PARAM(self)])
 
         # Filter by full-text search
         textsearch_filter = self.request.GET.get(TEXTSEARCH_PARAM, None)
@@ -798,6 +800,10 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
         List the submissions in each submission set instead of just a summary of
         the set.
 
+      * `include_tags`
+
+        List each of the tags on the place, instead of just a summary of the tags.
+
       * `include_invisible` *(only direct auth)*
 
         Show the place even if it is set as. You must specify use this flag to
@@ -930,6 +936,12 @@ class PlaceListView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, Owned
                 'submissions__submitter__social_auth',
                 'submissions__submitter___groups',
                 'submissions__attachments')
+
+        if INCLUDE_TAGS_PARAM in self.request.GET:
+            queryset = queryset.prefetch_related(
+                'tags',
+                'tags__submitter',
+            )
 
         return queryset
 

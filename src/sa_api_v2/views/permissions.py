@@ -157,9 +157,12 @@ class IsAllowedByDataPermissions(permissions.BasePermission):
         do_action = actions[request.method.upper()]
 
         # Submission instance or list, or attachments thereon
+        # TODO: rename this to 'resource_name_kwarg'
         if hasattr(view, 'submission_set_name_kwarg') and view.submission_set_name_kwarg in view.kwargs:
             data_type = view.kwargs[view.submission_set_name_kwarg]
 
+        elif hasattr(view, 'resource_id'):
+            data_type = view.resource_id
         # Place instance or list, or attachents thereon
         else:
             data_type = 'places'

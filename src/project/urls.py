@@ -1,5 +1,6 @@
 from django.conf.urls import patterns, include, url
 from django.conf import settings
+from django.contrib.auth.views import logout_then_login
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -25,7 +26,7 @@ urlpatterns = patterns('',
 
     # For now, use basic auth.
     url(r'^accounts/', include('django.contrib.auth.urls')),
-    url(r'^accounts/logout/$', 'django.contrib.auth.views.logout_then_login',
+    url(r'^accounts/logout/$', logout_then_login,
         name='manager_logout'),
 
     # For now, the API and the management console are hosted together.
