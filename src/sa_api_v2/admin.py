@@ -137,7 +137,11 @@ class InlineApiKeyAdmin(admin.StackedInline):
             return '(You must save your dataset before you can edit the permissions on your API key.)'
         else:
             return (
-                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:sa_api_v2_apikey_change', args=[instance.pk]))
+                # '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:sa_api_v2_apikey_change', args=[instance.pk]))
+                # + self.permissions_list(instance)
+
+                # temp workaround for https://github.com/jalMogo/mgmt/issues/204:
+                '<a><strong>Edit permissions (disabled for API keys)</strong></a>'
                 + self.permissions_list(instance)
             )
     edit_url.allow_tags = True
