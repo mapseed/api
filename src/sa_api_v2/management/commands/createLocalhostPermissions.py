@@ -4,7 +4,8 @@ from django.db import transaction
 
 from sa_api_v2.models import (
     DataSet,
-    OriginPermission
+    OriginPermission,
+    PlaceEmailTemplate
 )
 
 from sa_api_v2.cors.models import Origin
@@ -20,13 +21,20 @@ logger.setLevel(logging.INFO)
 
 
 class Command(BaseCommand):
-    help = """
-    For our dev api, update the origin permissions in all our datasets
-    """
+    help = """ For our dev api, update the origin permissions in our datasets and
+    origin references to our place email templates"""
 
     def handle(self, *args, **options):
         datasets = DataSet.objects.all()
         with transaction.atomic():
+
+            # delete all origin references to any place_email_templates:
+            for email_template in PlaceEmailTemplate.objects.all():
+                logger.info("Deleting origin references to place email template: {}"
+                            .format(email_template))
+                email_template.origins.clear()
+
+            # add localhost permissions to all datasets, if not already added:
             for dataset in datasets:
                 # skip over datasets that already have a localhost origin...
                 matches = [origin for origin in dataset.origins.all()
@@ -36,6 +44,7 @@ class Command(BaseCommand):
                                 .format(dataset))
                     continue
 
+                # create a new permission:
                 ds_origin = Origin.objects.create(pattern='localhost:8000', dataset=dataset)
                 OriginPermission.objects.create(
                     origin=ds_origin,
