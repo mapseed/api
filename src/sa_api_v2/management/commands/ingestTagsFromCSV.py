@@ -42,41 +42,41 @@ TAGS = [
         "children": [
             {
                 "name": "above costs",
-                "color": "#FF0000"
+                "color": "#c9302c"
             },
             {
                 "name": "illegal",
-                "color": "#FF0000"
+                "color": "#c9302c"
             },
             {
                 "name": "programmatic",
-                "color": "#FF0000"
+                "color": "#c9302c"
             },
             {
                 "name": "separate process",
-                "color": "#FF0000"
+                "color": "#c9302c"
             },
             {
                 "name": "incomplete",
-                "color": "#FF0000"
+                "color": "#c9302c"
             },
             {
                 "name": "county function",
-                "color": "#FF0000"
+                "color": "#c9302c"
             },
             {
                 "name": "private",
-                "color": "#FF0000"
+                "color": "#c9302c"
             },
             {
                 "name": "not in durham",
-                "color": "#FF0000"
+                "color": "#c9302c"
             },
         ]
     },
     {
         "name": "Vetted",
-        "color": "#00FF00"
+        "color": "#449d44"
     }
 ]
 
