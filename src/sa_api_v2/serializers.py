@@ -1124,7 +1124,7 @@ class TagSerializer (serializers.ModelSerializer):
 
     class Meta:
         model = models.Tag
-        fields = ['id', 'url', 'name', 'parent', 'color', 'is_enabled']
+        fields = ['id', 'url', 'name', 'parent', 'color', 'is_enabled', 'children']
 
 
 class PlaceTagSerializer (serializers.ModelSerializer):
