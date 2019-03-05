@@ -139,17 +139,12 @@ def get_tag(row, column_name):
     score = row[column_name]
     if type(score) == float and math.isnan(score):
         logger.info("row has invalid score: {}".format(row))
-        import ipdb
-        ipdb.set_trace()
         raise ValueError("row has invalid score: {}".format(row))
     tag_name = TAG_MAPPINGS.get(column_name)
     tag = Tag.objects.get(name=tag_name)
     for child in tag.children.all():
         if int(child.name) == int(score):
             tag_child = child
-    if tag_child is None:
-        import ipdb
-        ipdb.set_trace()
     return tag_child
 
 
@@ -162,15 +157,11 @@ def create_place_tags(dataset):
             id_field = id_field.split(" ")
         elif type(id_field) == float and math.isnan(id_field):
             logger.info("invalid mapseed id field on row: {}".format(row))
-            # import ipdb
-            # ipdb.set_trace()
             continue
         elif type(id_field) == float:
             id_field = [int(id_field)]
         else:
             logger.info("invalid mapseed id field on row: {}".format(row))
-            import ipdb
-            ipdb.set_trace()
             continue
         logger.info("parsed id field: {}".format(id_field))
 
@@ -180,9 +171,6 @@ def create_place_tags(dataset):
         # create a merge tag for each place, pointing back to the
         # first place in the list:
         merged_tag = Tag.objects.get(name="merged")
-        if merged_tag is None:
-            import ipdb
-            ipdb.set_trace()
         main_place = places[0]
         for place in places[1:]:
             place_tag = PlaceTag.objects.create(
@@ -199,9 +187,6 @@ def create_place_tags(dataset):
         PlaceTag.objects.create(tag=equity_tag, place=main_place)
         PlaceTag.objects.create(tag=feasibility_tag, place=main_place)
         PlaceTag.objects.create(tag=impact_tag, place=main_place)
-
-    import ipdb
-    ipdb.set_trace()
 
 
 class Command(BaseCommand):
