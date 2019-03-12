@@ -760,10 +760,7 @@ class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, O
                 user = serializer.instance.submitter
             if 'submitter' in serializer.validated_data:
                 user = serializer.validated_data['submitter']
-            self.object = serializer.save(
-                submitter=user if user is not None and user.is_authenticated() else None,
-                **save_kwargs
-            )
+            self.object = serializer.save(**save_kwargs)
             return Response(serializer.data, status=success_status_code)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
