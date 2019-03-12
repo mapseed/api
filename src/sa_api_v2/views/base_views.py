@@ -760,7 +760,6 @@ class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, O
                 user = serializer.instance.submitter
             if 'submitter' in serializer.validated_data:
                 user = serializer.validated_data['submitter']
-                print('user', user)
             self.object = serializer.save(**save_kwargs)
             return Response(serializer.data, status=success_status_code)
 
