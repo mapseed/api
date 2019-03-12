@@ -30,6 +30,7 @@ TAG_MAPPINGS = {
 RED = "#c9302c"
 YELLOW = "#e99a00"
 GREEN = "#449d44"
+BLUE = "#6495ED"
 
 TAGS = [
     {
@@ -37,8 +38,8 @@ TAGS = [
         "is_enabled": False,
         "children": [
             {
-                "name": "merged"
-                # "color": BLUE
+                "name": "merged",
+                "color": BLUE
             },
             {
                 "name": "feasibility",
