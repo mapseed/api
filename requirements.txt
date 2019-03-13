@@ -101,3 +101,5 @@ raven==5.11.1  # For Sentry error logging
 
 # For DRF 0.4 (deprecated)
 URLObject>=2.4.0
+
+pandas==0.24.1

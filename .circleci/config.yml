@@ -7,7 +7,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: mapseed/api:release-1.6.0
+      - image: mapseed/api:release-1.7.0
         environment:
           PASS: test1234
           USERNAME: testuser
