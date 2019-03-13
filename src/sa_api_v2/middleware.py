@@ -1,6 +1,7 @@
 import time
 import logging
 
+
 class RequestTimeLogger (object):
     def process_request(self, request):
         self.start_time = time.time()
@@ -52,16 +53,4 @@ class JSEnableAllCookies (object):
             for morsel in response.cookies.values():
                 morsel['httponly'] = ''
 
-        return response
-
-
-class UniversalP3PHeader (object):
-    """
-    Sets P3P headers on the response. This header does not specify
-    a valid P3P policy, but it is enough to get past IE.
-
-    See http://stackoverflow.com/a/17710503/123776
-    """
-    def process_response(self, request, response):
-        response['P3P'] = 'CP="Shareabouts does not have a P3P policy."'
         return response

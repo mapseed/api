@@ -140,7 +140,6 @@ MIDDLEWARE_CLASSES = (
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'sa_api_v2.middleware.RequestTimeLogger',
-    'sa_api_v2.middleware.UniversalP3PHeader',
 )
 
 # We only use the CORS Headers app for oauth. The Shareabouts API resources
