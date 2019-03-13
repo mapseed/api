@@ -1,5 +1,23 @@
 import time
+import json
 import logging
+
+
+# Request logging examples:
+# https://github.com/Rhumbix/django-request-logging/blob/master/request_logging/middleware.py
+# https://gist.github.com/SehgalDivij/1ca5c647c710a2c3a0397bce5ec1c1b4
+class RequestBodyLogger (object):
+    logger = logging.getLogger('ms_api.request')
+    allowed_methods = ['post', 'put', 'patch', 'delete']
+
+    def process_request(self, request):
+        method = request.method.lower()
+        if (method in self.allowed_methods):
+            self.logger.info('"{} {}" {}'.format(
+                request.method,
+                request.get_full_path(),
+                json.dumps(json.loads(request.body), indent=2)
+            ))
 
 
 class RequestTimeLogger (object):
