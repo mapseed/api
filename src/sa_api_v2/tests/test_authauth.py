@@ -1,7 +1,6 @@
 from django.test import TestCase
-from django.test.client import RequestFactory
 from ..models import User
-from ..views import CurrentUserInstanceView
+import json
 
 
 class APITestMixin (object):
@@ -34,20 +33,32 @@ class CurrentUserViewTests (APITestMixin, TestCase):
     def test_POST_authenticates_user(self):
         User.objects.create_user(username='mjumbewu', password='abc123')
 
-        response = self.client.post('/api/v2/users/current', data={'username': 'mjumbewu', 'password': 'abc123'})
+        response = self.client.post(
+            '/api/v2/users/current',
+            data=json.dumps({'username': 'mjumbewu', 'password': 'abc123'}),
+            content_type="application/json",
+        )
 
         self.assertStatusCode(response, 302, 303)
         self.assertEqual(response['Location'], 'http://testserver/api/v2/mjumbewu')
 
     def test_POST_requires_password(self):
-        response = self.client.post('/api/v2/users/current', data={'username': 'mjumbewu'})
+        response = self.client.post(
+            '/api/v2/users/current',
+            data=json.dumps({'username': 'mjumbewu'}),
+            content_type="application/json",
+        )
 
         self.assertStatusCode(response, 400)
         self.assertIn('errors', response.data)
         self.assertIn('password', response.data['errors'])
 
     def test_POST_requires_username(self):
-        response = self.client.post('/api/v2/users/current', data={'password': 'abc123'})
+        response = self.client.post(
+            '/api/v2/users/current',
+            data=json.dumps({'password': 'abc123'}),
+            content_type="application/json",
+        )
 
         self.assertStatusCode(response, 400)
         self.assertIn('errors', response.data)
@@ -56,7 +67,11 @@ class CurrentUserViewTests (APITestMixin, TestCase):
     def test_POST_rejects_invalid_login(self):
         User.objects.create_user(username='mjumbewu', password='abc123')
 
-        response = self.client.post('/api/v2/users/current', data={'username': 'mjumbewu', 'password': 'abc124'})
+        response = self.client.post(
+            '/api/v2/users/current',
+            data=json.dumps({'username': 'mjumbewu', 'password': 'abc124'}),
+            content_type="application/json",
+        )
 
         self.assertStatusCode(response, 401)
         self.assertIn('errors', response.data)
