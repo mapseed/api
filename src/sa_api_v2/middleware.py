@@ -12,11 +12,12 @@ class RequestBodyLogger (object):
 
     def process_request(self, request):
         method = request.method.lower()
-        if (method in self.allowed_methods):
+        if (method in self.allowed_methods and
+           request.META['CONTENT_TYPE'] == 'application/json'):
             self.logger.info('"{} {}" {}'.format(
                 request.method,
                 request.get_full_path(),
-                json.dumps(json.loads(request.body), indent=2)
+                json.dumps(json.loads(request.body.decode("utf-8")), indent=2)
             ))
 
 
