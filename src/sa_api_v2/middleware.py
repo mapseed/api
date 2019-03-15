@@ -13,7 +13,7 @@ class RequestBodyLogger (object):
     def process_request(self, request):
         method = request.method.lower()
         if (method in self.allowed_methods and
-           request.META['CONTENT_TYPE'] == 'application/json'):
+           request.META.get('CONTENT_TYPE') == 'application/json'):
             self.logger.info('"{} {}" {}'.format(
                 request.method,
                 request.get_full_path(),
