@@ -2,49 +2,11 @@ from django.conf.urls import patterns, url, include
 from django.contrib.auth.views import login
 from django.http import HttpResponse
 from . import views
-import logging
-from rest_framework.response import Response
-
-logger = logging.getLogger(__name__)
-
-
-def log_debug(request):
-    logger.debug("debug!")
-    return HttpResponse(content="debug was logged", status=200, content_type='text/plain')
-
-
-def log_info(request):
-    logger.info("testing info logging")
-    return HttpResponse(content="info was logged", status=200, content_type='text/plain')
-
-
-def log_warning(request):
-    logger.warning("testing warning logging")
-    return HttpResponse(content="warning was logged", status=200, content_type='text/plain')
-
-
-def log_error(request):
-    logger.error("testing error logging")
-    return HttpResponse(content="error was logged", status=200, content_type='text/plain')
-
 
 urlpatterns = patterns('sa_api_v2',
     url(r'^$',
         views.ShareaboutsAPIRootView.as_view(),
         name='api-root'),
-# TODO: Remove these test routes! Only for temporarily testing our sentry logs...
-    url(r'^test/debug$',
-        log_debug),
-
-    url(r'^test/info$',
-        log_info),
-
-    url(r'^test/warning$',
-        log_warning),
-
-    url(r'^test/error$',
-        log_error),
-
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<thing_id>\d+)/attachments$',
         views.AttachmentListView.as_view(),
         name='place-attachments'),
