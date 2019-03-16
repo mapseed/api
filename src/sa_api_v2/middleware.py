@@ -1,5 +1,25 @@
 import time
+import json
 import logging
+
+
+# Request logging examples:
+# https://github.com/Rhumbix/django-request-logging/blob/master/request_logging/middleware.py
+# https://gist.github.com/SehgalDivij/1ca5c647c710a2c3a0397bce5ec1c1b4
+class RequestBodyLogger (object):
+    logger = logging.getLogger('ms_api.request')
+    allowed_methods = ['post', 'put', 'patch', 'delete']
+
+    def process_request(self, request):
+        method = request.method.lower()
+        if (method in self.allowed_methods and
+           request.META.get('CONTENT_TYPE') == 'application/json'):
+            self.logger.info('"{} {}" {}'.format(
+                request.method,
+                request.get_full_path(),
+                json.dumps(json.loads(request.body.decode("utf-8")), indent=2)
+            ))
+
 
 class RequestTimeLogger (object):
     def process_request(self, request):
@@ -52,16 +72,4 @@ class JSEnableAllCookies (object):
             for morsel in response.cookies.values():
                 morsel['httponly'] = ''
 
-        return response
-
-
-class UniversalP3PHeader (object):
-    """
-    Sets P3P headers on the response. This header does not specify
-    a valid P3P policy, but it is enough to get past IE.
-
-    See http://stackoverflow.com/a/17710503/123776
-    """
-    def process_response(self, request, response):
-        response['P3P'] = 'CP="Shareabouts does not have a P3P policy."'
         return response

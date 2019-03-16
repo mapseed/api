@@ -140,7 +140,7 @@ MIDDLEWARE_CLASSES = (
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'sa_api_v2.middleware.RequestTimeLogger',
-    'sa_api_v2.middleware.UniversalP3PHeader',
+    'sa_api_v2.middleware.RequestBodyLogger',
 )
 
 # We only use the CORS Headers app for oauth. The Shareabouts API resources
@@ -312,7 +312,7 @@ LOGGING = {
             'formatter': 'moderate'
         },
         'sentry': {
-            'level': 'WARNING',
+            'level': 'INFO',
             'class': 'raven.contrib.django.raven_compat.handlers.' +
             'SentryHandler',
             'formatter': 'verbose',
@@ -338,6 +338,12 @@ LOGGING = {
         'django.db.backends': {
             'handlers': ['console', 'sentry'],
             'level': 'DEBUG',
+            'propagate': True,
+        },
+
+        'ms_api.request': {
+            'handlers': ['console', 'sentry'],
+            'level': 'INFO',
             'propagate': True,
         },
 
