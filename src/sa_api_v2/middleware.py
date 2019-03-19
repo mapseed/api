@@ -14,11 +14,18 @@ class RequestBodyLogger (object):
         method = request.method.lower()
         if (method in self.allowed_methods and
            request.META.get('CONTENT_TYPE') == 'application/json'):
-            self.logger.info('"{} {}" {}'.format(
-                request.method,
-                request.get_full_path(),
-                json.dumps(json.loads(request.body.decode("utf-8")), indent=2)
-            ))
+            # DELETE often has an empty string as body:
+            if request.body == '' or request.body is None:
+                self.logger.info('"{} {}"'.format(
+                    request.method,
+                    request.get_full_path(),
+                ))
+            else:
+                self.logger.info('"{} {}" {}'.format(
+                    request.method,
+                    request.get_full_path(),
+                    json.dumps(json.loads(request.body.decode("utf-8")), indent=2)
+                ))
 
 
 class RequestTimeLogger (object):
