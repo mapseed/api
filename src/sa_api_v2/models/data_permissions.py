@@ -70,6 +70,7 @@ class DataPermission (CloneableModelMixin, CacheClearingModel, models.Model):
         if self.can_retrieve: abilities.append('retrieve')
         if self.can_update: abilities.append('update')
         if self.can_destroy: abilities.append('destroy')
+        if self.can_access_protected: abilities.append('can_access_protected')
 
         return abilities
 
