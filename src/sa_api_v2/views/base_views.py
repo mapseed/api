@@ -450,6 +450,10 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
         if not getattr(obj, 'visible', True):
             if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
                 raise QueryError(detail='You must explicitly request invisible resources with the "include_invisible" parameter.')
+        # If the object is private, check that include_private_places is on
+        if getattr(obj, 'private', False):
+            if INCLUDE_PRIVATE_PLACES_PARAM not in self.request.GET:
+                raise QueryError(detail='You must explicitly request private resources with the "include_private_places" parameter.')
 
         if not self.is_verified_object(obj, ObjType):
             raise Http404
