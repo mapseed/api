@@ -12,11 +12,10 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import (views, permissions, mixins, authentication,
                             generics, exceptions, status)
-from oauth2_provider.ext.rest_framework import authentication as oauth2Authentication
+from oauth2_provider.contrib.rest_framework import authentication as oauth2Authentication
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
-from rest_framework_jsonp.renderers import JSONPRenderer
 from rest_framework.request import Request
 from rest_framework.exceptions import APIException
 from rest_framework_bulk import generics as bulk_generics
@@ -343,7 +342,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     logged in directly is allowed to read invisible resources or private data
     attributes on visible resources.
     """
-    renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
+    renderer_classes = (JSONRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     parser_classes = (JSONParser, FormParser, MultiPartParser)
     permission_classes = (IsAdminOwnerOrReadOnly, IsAllowedByDataPermissions)
     authentication_classes = (authentication.BasicAuthentication, oauth2Authentication.OAuth2Authentication, ShareaboutsSessionAuth)
@@ -737,7 +736,7 @@ class PlaceInstanceView (Sanitizer, CachedResourceMixin, LocatedResourceMixin, O
 
     model = models.Place
     serializer_class = serializers.PlaceSerializer
-    renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
+    renderer_classes = (renderers.GeoJSONRenderer,) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
 
     # Override update() here to support HTML sanitization
@@ -897,7 +896,7 @@ class PlaceListView (
 
     serializer_class = serializers.PlaceSerializer
     pagination_class = serializers.FeatureCollectionPagination
-    renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
+    renderer_classes = (renderers.GeoJSONRenderer,) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
 
     # Overriding create so we can sanitize submitted fields, which may
@@ -1790,7 +1789,7 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
 
 
 class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
-    renderer_classes = (renderers.NullJSONRenderer, renderers.NullJSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
+    renderer_classes = (renderers.NullJSONRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     content_negotiation_class = ShareaboutsContentNegotiation
     authentication_classes = (ShareaboutsSessionAuth,)
 
@@ -1841,7 +1840,7 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
 
 
 class SessionKeyView (CorsEnabledMixin, views.APIView):
-    renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer)
+    renderer_classes = (JSONRenderer, BrowsableAPIRenderer)
     content_negotiation_class = ShareaboutsContentNegotiation
 
     def get(self, request):

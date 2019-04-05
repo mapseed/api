@@ -2,7 +2,8 @@
 # Web server
 # ==============================
 
-Django==1.9.13
+Django==1.10.8
+
 gevent==1.1.1
 gunicorn==19.5
 newrelic==2.60.0.46
@@ -36,7 +37,8 @@ django-cache-url==1.0.0
 
 # File Storage
 boto==2.39.0
-django-storages==1.4.1
+# TODO: need 1.6.x for 1.11 support:
+django-storages==1.5.2
 
 # hierarchy support for our dataset labels:
 django-closuretree==1.2.0
@@ -52,7 +54,8 @@ django-loginas==0.2.2
 # django-oauth2-provider==0.2.6.1
 # git+https://github.com/glassresistor/django-oauth2-provider.git@4269205#egg=django-oauth2-provider==0.2.7-dev
 # installing django-ouath-toolkit to replace django-oauth2-provider
-django-oauth-toolkit== 0.12.0
+
+django-oauth-toolkit== 1.0.0
 
 
 django-cors-headers==1.1.0
@@ -63,9 +66,9 @@ django-cors-headers==1.1.0
 # REST API
 # ==============================
 
-djangorestframework==3.3.3
-djangorestframework-csv==1.4.1
-djangorestframework-jsonp>=1.0.0,<1.1
+djangorestframework==3.4.7
+djangorestframework-csv==2.0.0
+
 # git+https://github.com/mjumbewu/django-rest-framework-bulk.git@84a5d6c#egg=djangorestframework-bulk==0.1.3
 # replace forked drf-bulk with main version
 djangorestframework-bulk==0.2
@@ -77,6 +80,7 @@ Pillow==3.1.1
 bleach==1.4.3
 
 # The Django admin interface
+# TODO: upgrade to 1.0.4 for django 1.11:
 django-ace==1.0.2
 
 # The manager interface
@@ -89,12 +93,15 @@ requests>=2.9.1
 # ==============================
 
 nose==1.3.7
-django-nose==1.4.3
+django-nose==1.4.6
 mock==1.3.0
+# delete this? Unused?
 mock_django==0.6.10
 responses==0.5.1
+# delete this? Unused?
 django-debug-toolbar==1.4
-raven==5.11.1  # For Sentry error logging
+# TODO: upgrade to 6.x for django 1.11:
+raven==5.32.0  # For Sentry error logging
 
 
 # - - - - - - - - - - - - - - - -

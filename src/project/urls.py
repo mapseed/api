@@ -1,4 +1,4 @@
-from django.conf.urls import patterns, include, url
+from django.conf.urls import include, url
 from django.conf import settings
 from django.contrib.auth.views import logout_then_login
 
@@ -9,7 +9,7 @@ from django.shortcuts import resolve_url
 
 admin.autodiscover()
 
-urlpatterns = patterns('',
+urlpatterns = [
     # Examples:
     # url(r'^$', 'project.views.home', name='home'),
     # url(r'^project/', include('project.foo.urls')),
@@ -32,13 +32,4 @@ urlpatterns = patterns('',
     # For now, the API and the management console are hosted together.
     url(r'^api/v2/', include('sa_api_v2.urls')),
     url(r'^api/v1/', lambda x: HttpResponse(status=410)),
-
-)
-
-# Debug toolbar explicit setup
-from django.conf import settings
-if settings.DEBUG:
-    import debug_toolbar
-    urlpatterns += patterns('',
-        url(r'^__debug__/', include(debug_toolbar.urls)),
-    )
+]

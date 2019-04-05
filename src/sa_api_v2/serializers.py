@@ -407,7 +407,7 @@ class DataBlobProcessor (EmptyModelSerializer):
 
         # Pull off any fields that the model doesn't know about directly
         # and put them into the data blob.
-        known_fields = set(model._meta.get_all_field_names())
+        known_fields = set([f.name for f in model._meta.get_fields()])
 
         # Also ignore the following field names (treat them like reserved
         # words).

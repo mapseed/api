@@ -1,6 +1,5 @@
 import ujson as json
 from rest_framework.renderers import JSONRenderer
-from rest_framework_jsonp.renderers import JSONPRenderer
 from rest_framework_csv.renderers import CSVRenderer
 from django.contrib.gis.geos import GEOSGeometry
 
@@ -72,14 +71,7 @@ class GeoJSONRenderer(JSONRenderer):
         return feature
 
 
-class GeoJSONPRenderer(JSONPRenderer, GeoJSONRenderer):
-    """
-    Renderer which serializes to geojson,
-    wrapping the json output in a callback function.
 
-    (JSONPRenderer will call GeoJSONRenderer before JSONRenderer)
-    """
-    pass
 
 
 class NullJSONRenderer(JSONRenderer):
@@ -92,8 +84,3 @@ class NullJSONRenderer(JSONRenderer):
         return super(NullJSONRenderer, self).render(data, media_type, renderer_context)
 
 
-class NullJSONPRenderer(JSONPRenderer, NullJSONRenderer):
-    """
-    (JSONPRenderer will call NullJSONRenderer before JSONRenderer)
-    """
-    pass
