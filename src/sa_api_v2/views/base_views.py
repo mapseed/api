@@ -12,7 +12,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import (views, permissions, mixins, authentication,
                             generics, exceptions, status)
-from oauth2_provider.ext.rest_framework import authentication as oauth2Authentication
+from oauth2_provider.contrib.rest_framework import authentication as oauth2Authentication
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer

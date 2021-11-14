@@ -1,9 +1,9 @@
-from django.conf.urls import patterns, url, include
+from django.conf.urls import url, include
 from django.contrib.auth.views import login
 from django.http import HttpResponse
 from . import views
 
-urlpatterns = patterns('sa_api_v2',
+urlpatterns = [
     url(r'^$',
         views.ShareaboutsAPIRootView.as_view(),
         name='api-root'),
@@ -136,7 +136,7 @@ urlpatterns = patterns('sa_api_v2',
     url(r'^utils/session-key', views.SessionKeyView.as_view(), name='session-key'),
     url(r'^utils/noop/?$', lambda request: HttpResponse(''), name='noop-route'),
 
-)
+]
 
 #places_base_regex = r'^(?P<dataset__owner__username>[^/]+)/datasets/(?P<dataset__slug>[^/]+)/places/'
 
