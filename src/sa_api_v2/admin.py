@@ -315,7 +315,8 @@ class InlinePlaceTagAdmin(admin.StackedInline):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "tag":
-            kwargs["queryset"] = models.Tag.objects.filter(dataset=self.parent_obj.dataset)
+            if self.parent_obj:
+                kwargs["queryset"] = models.Tag.objects.filter(dataset=self.parent_obj.dataset)
             return super(InlinePlaceTagAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
 
