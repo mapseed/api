@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth import views as auth_views
 from django.contrib.gis.geos import GEOSGeometry, Point, Polygon
 from django.core import cache as django_cache
+from django.contrib import admin
 from django.core.urlresolvers import reverse
 from django.db.models import Count, Q
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
@@ -1888,6 +1889,9 @@ def capture_referer(view_func):
     return wrapper
 
 remote_social_login = capture_referer(social_views.auth)
+admin.autodiscover()
+admin_login = capture_referer(admin.site.login)
+
 remote_logout = capture_referer(auth_views.logout)
 
 def remote_social_login_error(request):
@@ -1895,7 +1899,7 @@ def remote_social_login_error(request):
     return redirector(request, target=error_redirect_url)
 
 # social_auth_login = use_social_auth_headers(social_views.auth)
-# social_auth_complete = use_social_auth_headers(social_views.complete)
+# social_auth_complete =0/api/v2/users/login/django/ use_social_auth_headers(social_views.complete)
 
 def redirector(request, target=None):
     """
