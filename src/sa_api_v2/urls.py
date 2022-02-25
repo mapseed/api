@@ -115,6 +115,10 @@ urlpatterns = [
         views.CurrentUserInstanceView.as_view(),
         name='current-user-detail'),
 
+    url(r'^users/new$',
+        views.CreateNewUserView.as_view(),
+        name='user-new'),
+
     # authentication / association
 
     url(r'^users/login/error/$', views.remote_social_login_error, name='remote-social-login-error'),

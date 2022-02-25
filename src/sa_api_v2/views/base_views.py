@@ -1790,6 +1790,43 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
         return owner
 
 
+class CreateNewUserView(CorsEnabledMixin, views.APIView):
+    renderer_classes = (renderers.NullJSONRenderer, renderers.NullJSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
+    content_negotiation_class = ShareaboutsContentNegotiation
+    authentication_classes = (ShareaboutsSessionAuth,)
+
+    # Since this view only affects the local session, make it always safe for
+    # CORS requests.
+    SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE', 'OPTIONS', 'POST', 'DELETE')
+
+    def post(self, request):
+        from django.contrib.auth.forms import UserCreationForm
+        from sa_api_v2.models import Group, User
+        data = request.data
+        data["password2"] = data.get("password1")
+        us = UserCreationForm(data)
+        if us.is_valid():
+            user_instance = us.save()
+            user_instance.is_staff = True
+            user_instance.is_superuser = True
+            user_instance.save()
+            if settings.DEFAULT_REGISTER_DATASET and settings.DEFAULT_REGISTER_GROUP:
+                dds = settings.DEFAULT_REGISTER_DATASET
+                dg = settings.DEFAULT_REGISTER_GROUP
+                g = Group.objects.get(name=dg, dataset__display_name=dds)
+                g.submitters.add(User.objects.get(username=user_instance.username))
+                g.save() 
+            user_url = reverse('user-detail', args=[user_instance.username])
+            # use the absolute url for CORS protection:
+            user_url = request.build_absolute_uri(user_url)
+
+            # Is cross-origin?
+            if 'HTTP_ORIGIN' in request.META:
+                return HttpResponse(content=user_url, status=200, content_type='text/plain')
+            else:
+                return HttpResponseRedirect(user_url, status=303)
+        return Response({"errors": us.errors})
+
 class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
     renderer_classes = (renderers.NullJSONRenderer, renderers.NullJSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     content_negotiation_class = ShareaboutsContentNegotiation
