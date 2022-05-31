@@ -278,6 +278,31 @@ class Migration(migrations.Migration):
             },
             bases=('sa_api_v2.submittedthing',),
         ),
+
+#################################################################################################################
+
+
+        migrations.CreateModel(
+            name='Master',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.CharField(max_length=100)),
+                ('description', models.TextField(null=True, blank=True)),
+                ('created_datetime', models.DateTimeField(default=django.utils.timezone.now, db_index=True, blank=True)),
+                ('updated_datetime', models.DateTimeField(auto_now=True, db_index=True)),
+                ('data', models.TextField(default=b'{}')),
+                ('visible', models.BooleanField(default=True, db_index=True)),
+            ],
+            options={
+                'db_table': 'sa_api_master',
+            },
+            bases=(sa_api_v2.models.mixins.CloneableModelMixin, sa_api_v2.models.caching.CacheClearingModel, models.Model),
+        ),
+        
+
+
+#################################################################################################################
+
         migrations.CreateModel(
             name='Webhook',
             fields=[
@@ -294,6 +319,7 @@ class Migration(migrations.Migration):
             },
             bases=(models.Model,),
         ),
+
         migrations.AddField(
             model_name='submittedthing',
             name='dataset',
@@ -312,6 +338,7 @@ class Migration(migrations.Migration):
             field=models.ForeignKey(related_name='submissions', to='sa_api_v2.Place'),
             preserve_default=True,
         ),
+
         migrations.AddField(
             model_name='indexedvalue',
             name='thing',
@@ -368,4 +395,15 @@ class Migration(migrations.Migration):
             field=models.ManyToManyField(related_query_name='user', related_name='user_set', to='auth.Permission', blank=True, help_text='Specific permissions for this user.', verbose_name='user permissions'),
             preserve_default=True,
         ),
+########################################################################################
+
+        migrations.AddField(
+            model_name='Master',
+            name='Master',
+            field=models.ForeignKey(related_name='keys', blank=True, to='sa_api_v2.DataSet'),
+            preserve_default=True,
+        ),
+########################################################################################
+
     ]
+

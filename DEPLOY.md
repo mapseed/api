@@ -8,7 +8,7 @@ docker exec -it postgres2 bash
 
 apt-get update
 
-apt-get install postgresql-13-postgis-3
+apt-get install postgresql-14-postgis-3
 
 # Dockerfile
 https://github.com/postgis/docker-postgis/blob/4eb614133d6aa87bfc5c952d24b7eb1f499e5c7c/12-3.0/Dockerfile

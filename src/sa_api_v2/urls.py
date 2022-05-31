@@ -45,6 +45,11 @@ urlpatterns = [
         views.PlaceTagListView.as_view(),
         name='place-tag-list'),
 
+    # Master tags
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/tags/(?P<place_tag_id>\d+)$',
+        views.PlaceTagInstanceView.as_view(),
+        name='place-tag-detail'),
+
     # submission sets (votes, comments)
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)/(?P<submission_id>\d+)$',
@@ -79,6 +84,14 @@ urlpatterns = [
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/origins$',
         views.OriginListView.as_view(),
         name='origin-list'),
+
+    #########################################################################################
+
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/origins$',
+        views.MasterListView.as_view(),
+        name='master-list'),
+
+    #########################################################################################
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)$',
         views.DataSetInstanceView.as_view(),

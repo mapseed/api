@@ -44,4 +44,4 @@ VOLUME /api/static
 # CMD python server.py
 # or:
 # CMD sh -c "python src/manage.py collectstatic --noinput && gunicorn wsgi:application -w 3 -b 0.0.0.0:8010"
-CMD /api/start.sh
+CMD ["bash", "/api/start.sh"]

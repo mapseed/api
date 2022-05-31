@@ -3,6 +3,7 @@ Basic behind-the-scenes maintenance for superusers,
 via django.contrib.admin.
 """
 
+from calendar import c
 import itertools
 import json
 import models
@@ -21,6 +22,9 @@ from .apikey.models import ApiKey
 from .cors.models import Origin
 from .cors.admin import OriginAdmin
 from .tasks import clone_related_dataset_data
+
+
+
 
 
 class SubmissionSetFilter (SimpleListFilter):
@@ -81,7 +85,7 @@ class PrettyAceWidget (AceWidget):
 class SubmittedThingAdmin(admin.OSMGeoAdmin):
     date_hierarchy = 'created_datetime'
     inlines = (InlineAttachmentAdmin,)
-    list_display = ('id', 'created_datetime', 'submitter_name', 'dataset', 'visible', 'data')
+    list_display = ('id', 'created_datetime', 'submitter_name', 'dataset', 'visible', 'data',)
     list_editable = ('visible',)
     list_filter = (DataSetFilter,)
     search_fields = ('submitter__username', 'data',)
@@ -196,6 +200,31 @@ class InlineGroupAdmin(admin.StackedInline):
             )
     edit_url.allow_tags = True
 
+    #######################################################################################################
+#ERRORS:<class 'sa_api_v2.admin.InlineMasterAdmin'>: (admin.E202) 'sa_api_v2.Master' has no ForeignKey to 'sa_api_v2.DataSet'.
+class InlineMasterAdmin(admin.StackedInline):
+    model = models.Master
+    extra = 0
+    readonly_fields = ('edit_url',)
+
+    def permissions_list(self, instance):
+        if instance.pk:
+            return '<ul>%s</ul>' % ''.join(['<li>%s</li>' % (escape(permission),) for permission in instance.permissions.all()])
+        else:
+            return ''
+
+    def edit_url(self, instance):
+        if instance.pk is None:
+            return '(You must save your dataset before you can edit the permissions on your API key.)'
+        else:
+            return (
+                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:sa_api_v2_master_change', args=[instance.pk]))
+                + self.permissions_list(instance)
+            )
+    edit_url.allow_tags = True
+
+    #########################################################################################################
+
 
 class InlineDataSetPermissionAdmin(admin.TabularInline):
     model = models.DataSetPermission
@@ -242,6 +271,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
     prepopulated_fields = {'slug': ['display_name']}
     search_fields = ('display_name', 'slug', 'owner__username')
 
+
     change_actions = ('clone_dataset', 'clear_cache')
     raw_id_fields = ('owner',)
     readonly_fields = ('api_path',)
@@ -250,6 +280,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
         InlineDataSetPermissionAdmin,
         InlineApiKeyAdmin,
         InlineOriginAdmin,
+        InlineMasterAdmin,
         InlineGroupAdmin,
         InlineTagAdmin,
         InlineWebhookAdmin
@@ -332,6 +363,24 @@ class PlaceAdmin(SubmittedThingAdmin):
         return '<a href="{0}">{0}</a>'.format(path)
     api_path.allow_tags = True
 
+##############################################################################
+
+class MasterAdmin(admin.ModelAdmin):
+    list_display = ('id', 'private_address', 'subbasin_name_nombre', 'title', 'datetime_field', 'report_time', 'location_type', 'nivel_agua_cuerpo', 'referencia_cercana', 'lluvias_observacion_opcion', 'entorno_cuerpo_agua', 'fuentes_opcion', 'estado_agua_registro', 'estado_color_agua', 'estado_olores_agua', 'estado_materiales_flotantes', 'estado_materiales_cuales', 'fuente_contaminacion_cercana', 'lluvias_observacion_opcion', 'vegetacion_cuerpo_agua','cuerpo_agua', 'subbasin_name', 'vegetacion_margenes_cuerpo', 'vegetacion_opcion', 'vientos_fuertes', 'fuente_contaminacion_cercana', 'estado_materiales_cuales', 'visitas', 'info_finaltext', 'info_finalarea', 'info_finalenlace', )
+    search_fields = ('id', 'subbasin_name_nombre', 'visitas', 'nivel_agua_cuerpo', 'report_time', 'referencia_cercana', 'lluvias_observacion_opcion', 'entorno_cuerpo_agua', 'fuentes_opcion', 'datetime_field', 'estado_agua_registro', 'estado_color_agua', 'estado_olores_agua', 'estado_materiales_flotantes', 'estado_materiales_cuales', 'fuente_contaminacion_cercana', 'lluvias_observacion_opcion', 'vegetacion_cuerpo_agua','cuerpo_agua', 'subbasin_name', 'vegetacion_margenes_cuerpo', 'location_type', 'vegetacion_opcion', 'vientos_fuertes', 'fuente_contaminacion_cercana', 'private_address', 'estado_materiales_cuales', 'info_finaltext', 'info_finalarea', 'info_finalenlace', )
+    ordering = ('private_address', )
+    list_editable = ('private_address', 'subbasin_name_nombre', 'title', 'location_type', 'nivel_agua_cuerpo', 'referencia_cercana', 'lluvias_observacion_opcion', 'entorno_cuerpo_agua', 'fuentes_opcion', 'estado_agua_registro', 'estado_color_agua', 'estado_olores_agua', 'estado_materiales_flotantes', 'estado_materiales_cuales', 'fuente_contaminacion_cercana', 'lluvias_observacion_opcion', 'vegetacion_cuerpo_agua','cuerpo_agua', 'subbasin_name', 'vegetacion_margenes_cuerpo', 'vegetacion_opcion', 'vientos_fuertes', 'fuente_contaminacion_cercana', 'estado_materiales_cuales', 'visitas', 'info_finaltext', 'info_finalarea', 'info_finalenlace', )
+    list_per_page = 20
+
+    def get_queryset(self, request):
+        qs = super(MasterAdmin, self).get_queryset(request)
+        user = request.user
+        if not user.is_superuser:
+            qs = qs.filter(dataset__owner=user)
+        return qs
+    
+
+##############################################################################
 
 class SubmissionAdmin(SubmittedThingAdmin):
     model = models.Submission
@@ -433,6 +482,7 @@ class UserAdmin(BaseUserAdmin):
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.DataSet, DataSetAdmin)
 admin.site.register(models.Place, PlaceAdmin)
+admin.site.register(models.Master, MasterAdmin)
 admin.site.register(models.Submission, SubmissionAdmin)
 admin.site.register(models.Action, ActionAdmin)
 admin.site.register(models.Group, GroupAdmin)

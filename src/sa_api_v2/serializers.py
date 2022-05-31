@@ -601,6 +601,7 @@ class OriginPermissionSerializer (serializers.ModelSerializer):
         model = models.OriginPermission
         exclude = ('id', 'origin')
 
+
 class ApiKeySerializer (serializers.ModelSerializer):
     permissions = KeyPermissionSerializer(many=True)
 
@@ -614,7 +615,6 @@ class OriginSerializer (serializers.ModelSerializer):
     class Meta:
         model = cors.models.Origin
         exclude = ('id', 'dataset', 'logged_ip', 'last_used')
-
 
 # Group serializers
 class BaseGroupSerializer (serializers.ModelSerializer):

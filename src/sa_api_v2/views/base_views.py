@@ -1593,6 +1593,30 @@ class AdminDataSetListView (CachedResourceMixin, DataSetListMixin, generics.List
     permission_classes = (IsLoggedInAdmin,)
     content_negotiation_class = ShareaboutsContentNegotiation
 
+########################################################################################################################
+
+class MasterListView (CachedResourceMixin, DataSetListMixin, generics.ListAPIView):
+    """
+
+    GET
+    ---
+    Get all the datasets
+
+    **Authentication**: Basic or session auth *(required)*
+
+    **Request Parameters**:
+
+      * `include_invisible`
+
+        Count visible and invisible places and submissions in the dataset. Only
+        the dataset owner is allowed to request invisible resoruces.
+
+    ------------------------------------------------------------
+    """
+
+
+######################################################################################################################
+
 
 class AttachmentInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpdateAPIView):
     """

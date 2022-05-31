@@ -1,3 +1,4 @@
+import idna
 import ujson as json
 from django.contrib.gis.db import models
 from django.contrib.gis.db.models import query
@@ -271,6 +272,7 @@ class Place (SubmittedThing):
     objects = GeoSubmittedThingManager()
     private = models.BooleanField(default=False, blank=True, db_index=True)
     cache = cache.PlaceCache()
+
     # previous_version = 'sa_api_v1.models.Place'
 
     class Meta:
@@ -287,6 +289,59 @@ class Place (SubmittedThing):
     def __unicode__(self):
         return str(self.id)
 
+
+#####################################################################################
+
+class Master (models.Model):
+ #sincroniza "data" de la clase "place" a esta clase "master"
+    id = models.AutoField(primary_key=True)
+    data = models.TextField()
+    visitas = models.TextField(blank=True, null=True)
+    nivel_agua_cuerpo = models.TextField(blank=True, null=True)
+    referencia_cercana = models.TextField(blank=True, null=True)
+    lluvias_observacion_opcion = models.TextField(blank=True, null=True)
+    entorno_cuerpo_agua = models.TextField(blank=True, null=True)
+    fuentes_opcion = models.TextField(blank=True, null=True)
+    subbasin_name_nombre = models.TextField(blank=True, null=True)
+    datetime_field = models.DateTimeField(blank=True, null=True)
+    estado_agua_registro = models.TextField(blank=True, null=True)
+    estado_color_agua = models.TextField(blank=True, null=True)
+    estado_olores_agua = models.TextField(blank=True, null=True)
+    estado_materiales_flotantes = models.TextField(blank=True, null=True)
+    estado_materiales_cuales = models.TextField(blank=True, null=True)
+    fuente_contaminacion_cercana = models.TextField(blank=True, null=True)
+    lluvias_observacion_opcion = models.TextField(blank=True, null=True)
+    vegetacion_cuerpo_agua = models.TextField(blank=True, null=True)
+    cuerpo_agua = models.TextField(blank=True, null=True)
+    subbasin_name = models.BooleanField(default=False)
+    vegetacion_margenes_cuerpo = models.TextField(blank=True, null=True)
+    location_type = models.TextField(blank=True, null=True)
+    vegetacion_opcion = models.TextField(blank=True, null=True)
+    vientos_fuertes = models.TextField(blank=True, null=True)
+    fuente_contaminacion_cercana = models.TextField(blank=True, null=True)
+    private_address = models.TextField(blank=True, null=True)
+    estado_materiales_cuales = models.TextField(blank=True, null=True)
+    report_time = models.TimeField(blank=True, null=True)
+    info_finaltext = models.TextField(blank=True, null=True)
+    info_finalarea = models.TextField(blank=True, null=True)
+    info_finalenlace = models.TextField(blank=True, null=True)
+    title = models.TextField(blank=True, null=True)
+    dataset = models.ForeignKey(DataSet, on_delete=models.CASCADE)
+
+    #sincronizar datos de la tabla master con la tabla submission
+    def clone_related(self, onto):
+        data_overrides = {'master_model': onto, 'dataset': onto.dataset}
+        for submission in self.submissions.all():
+            submission.clone(overrides=data_overrides)
+
+    def __unicode__(self):
+        return str(self.id)
+
+    
+
+
+
+#####################################################################################     
 
 class Submission (SubmittedThing):
     """
