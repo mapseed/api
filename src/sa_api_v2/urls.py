@@ -1,9 +1,9 @@
-from django.conf.urls import patterns, url, include
+from django.conf.urls import url, include
 from django.contrib.auth.views import login
 from django.http import HttpResponse
 from . import views
 
-urlpatterns = patterns('sa_api_v2',
+urlpatterns = [
     url(r'^$',
         views.ShareaboutsAPIRootView.as_view(),
         name='api-root'),
@@ -45,6 +45,11 @@ urlpatterns = patterns('sa_api_v2',
         views.PlaceTagListView.as_view(),
         name='place-tag-list'),
 
+    # Master tags
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/tags/(?P<place_tag_id>\d+)$',
+        views.PlaceTagInstanceView.as_view(),
+        name='place-tag-detail'),
+
     # submission sets (votes, comments)
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)/(?P<submission_id>\d+)$',
@@ -79,6 +84,14 @@ urlpatterns = patterns('sa_api_v2',
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/origins$',
         views.OriginListView.as_view(),
         name='origin-list'),
+
+    #########################################################################################
+
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/origins$',
+        views.MasterListView.as_view(),
+        name='master-list'),
+
+    #########################################################################################
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)$',
         views.DataSetInstanceView.as_view(),
@@ -115,9 +128,14 @@ urlpatterns = patterns('sa_api_v2',
         views.CurrentUserInstanceView.as_view(),
         name='current-user-detail'),
 
+    url(r'^users/new$',
+        views.CreateNewUserView.as_view(),
+        name='user-new'),
+
     # authentication / association
 
     url(r'^users/login/error/$', views.remote_social_login_error, name='remote-social-login-error'),
+    url(r'^users/login/django/$', views.admin_login, name='admin-login'),
     url(r'^users/login/(?P<backend>[^/]+)/$', views.remote_social_login, name='remote-social-login'),
     url(r'^users/logout/$', views.remote_logout, name='remote-logout'),
 
@@ -136,7 +154,7 @@ urlpatterns = patterns('sa_api_v2',
     url(r'^utils/session-key', views.SessionKeyView.as_view(), name='session-key'),
     url(r'^utils/noop/?$', lambda request: HttpResponse(''), name='noop-route'),
 
-)
+]
 
 #places_base_regex = r'^(?P<dataset__owner__username>[^/]+)/datasets/(?P<dataset__slug>[^/]+)/places/'
 

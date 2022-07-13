@@ -94,3 +94,5 @@ def create_data_permissions(sender, instance, created, **kwargs):
         OriginPermission.objects.create(origin=instance, submission_set='*',
             can_retrieve=True, can_create=True, can_update=True, can_destroy=True)
 post_save.connect(create_data_permissions, sender=Origin, dispatch_uid="origin-create-permissions")
+
+
