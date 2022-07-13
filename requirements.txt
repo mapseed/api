@@ -2,7 +2,7 @@
 # Web server
 # ==============================
 
-Django==1.9.13
+Django==1.10
 gevent==1.1.1
 gunicorn==19.5
 newrelic==2.60.0.46
@@ -52,7 +52,7 @@ django-loginas==0.2.2
 # django-oauth2-provider==0.2.6.1
 # git+https://github.com/glassresistor/django-oauth2-provider.git@4269205#egg=django-oauth2-provider==0.2.7-dev
 # installing django-ouath-toolkit to replace django-oauth2-provider
-django-oauth-toolkit== 0.12.0
+django-oauth-toolkit==1.0.0
 
 
 django-cors-headers==1.1.0
@@ -89,7 +89,7 @@ requests>=2.9.1
 # ==============================
 
 nose==1.3.7
-django-nose==1.4.3
+django-nose
 mock==1.3.0
 mock_django==0.6.10
 responses==0.5.1

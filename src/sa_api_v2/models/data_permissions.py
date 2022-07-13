@@ -1,7 +1,7 @@
 from django.contrib.gis.db import models
 from django.db.models.signals import post_save
 from .. import utils
-from .core import CacheClearingModel
+from .core import CacheClearingModel, Master
 from .core import DataSet
 from .core import Place
 from .mixins import CloneableModelMixin

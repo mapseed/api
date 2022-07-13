@@ -407,7 +407,7 @@ class DataBlobProcessor (EmptyModelSerializer):
 
         # Pull off any fields that the model doesn't know about directly
         # and put them into the data blob.
-        known_fields = set(model._meta.get_all_field_names())
+        known_fields = set(model._meta.get_fields())
 
         # Also ignore the following field names (treat them like reserved
         # words).
@@ -601,6 +601,7 @@ class OriginPermissionSerializer (serializers.ModelSerializer):
         model = models.OriginPermission
         exclude = ('id', 'origin')
 
+
 class ApiKeySerializer (serializers.ModelSerializer):
     permissions = KeyPermissionSerializer(many=True)
 
@@ -614,7 +615,6 @@ class OriginSerializer (serializers.ModelSerializer):
     class Meta:
         model = cors.models.Origin
         exclude = ('id', 'dataset', 'logged_ip', 'last_used')
-
 
 # Group serializers
 class BaseGroupSerializer (serializers.ModelSerializer):

@@ -13,7 +13,6 @@ from . import models
 #             except:
 #                 raise e
 
-
 class SubmissionForm (forms.ModelForm):
     class Meta:
         model = models.Submission
@@ -36,7 +35,6 @@ class PlaceForm (forms.ModelForm):
         # When using the place form, the dataset set should be set by some
         # external mechanism, usually according to the URL path.
         exclude = ['dataset']
-
 
 class ActionForm (forms.Form):
     before = forms.IntegerField(required=False)
