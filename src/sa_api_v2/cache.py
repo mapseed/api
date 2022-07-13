@@ -424,6 +424,7 @@ class PlaceCache (Cache):
         return prefixes
 
 
+
 class SubmissionCache (Cache):
     dataset_cache = DataSetCache()
     place_cache = PlaceCache()
@@ -487,6 +488,7 @@ class PlaceTagCache (Cache):
             'place_tag_id': place_tag_obj.pk,
         })
         return params
+
 
 
 class ActionCache (Cache):

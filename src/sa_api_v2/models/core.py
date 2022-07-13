@@ -1,3 +1,4 @@
+import idna
 import ujson as json
 from django.contrib.gis.db import models
 from django.contrib.gis.db.models import query
@@ -271,6 +272,7 @@ class Place (SubmittedThing):
     objects = GeoSubmittedThingManager()
     private = models.BooleanField(default=False, blank=True, db_index=True)
     cache = cache.PlaceCache()
+
     # previous_version = 'sa_api_v1.models.Place'
 
     class Meta:
@@ -287,6 +289,50 @@ class Place (SubmittedThing):
     def __unicode__(self):
         return str(self.id)
 
+
+#####################################################################################
+
+class Master (models.Model):
+    id = models.AutoField(primary_key=True)
+    agua_calidad = models.CharField(max_length=255, blank=True, null=True)
+    biodiversidad_especies = models.CharField(max_length=255, blank=True, null=True)
+    cuerpo_agua = models.CharField(max_length=255, blank=True, null=True)
+    datetime_field = models.CharField(max_length=255, blank=True, null=True)
+    estado_agua_clara = models.CharField(max_length=255, blank=True, null=True)
+    estado_agua_registro = models.CharField(max_length=255, blank=True, null=True)
+    estado_color_agua = models.CharField(max_length=255, blank=True, null=True)
+    estado_materiales_cuales = models.CharField(max_length=255, blank=True, null=True)
+    estado_materiales_flotantes = models.CharField(max_length=255, blank=True, null=True)
+    estado_olores_agua = models.CharField(max_length=255, blank=True, null=True)
+    entorno_cuerpo_agua = models.CharField(max_length=255, blank=True, null=True)
+    fuente_contaminacion_cercana = models.CharField(max_length=255, blank=True, null=True)
+    fuentes_opcion = models.CharField(max_length=255, blank=True, null=True)
+    lluvias_observacion = models.CharField(max_length=255, blank=True, null=True)
+    lluvias_observacion_opcion = models.CharField(max_length=255, blank=True, null=True)
+    location_type = models.CharField(max_length=255, blank=True, null=True)
+    nivel_agua_cuerpo = models.CharField(max_length=255, blank=True, null=True)
+    private_address = models.CharField(max_length=255, blank=True, null=True)
+    referencia_cercana = models.CharField(max_length=255, blank=True, null=True)
+    reportes_estado_area = models.CharField(max_length=255, blank=True, null=True)
+    subbasin_name = models.CharField(max_length=255, blank=True, null=True)
+    subbasin_name_nombre = models.CharField(max_length=255, blank=True, null=True)
+    vegetacion_cuerpo_agua = models.CharField(max_length=255, blank=True, null=True)
+    vegetacion_cuerpo_agua_option = models.CharField(max_length=255, blank=True, null=True)
+    vegetacion_margenes_cuerpo = models.CharField(max_length=255, blank=True, null=True)
+    vegetacion_opcion = models.CharField(max_length=255, blank=True, null=True)
+    vientos_fuertes = models.CharField(max_length=255, blank=True, null=True)
+    visitas = models.CharField(max_length=255, blank=True, null=True)
+    visible = models.BoolenField(default=True)
+    image = models.ImageField(upload_to='image', null=True)
+    
+    def __unicode__(self):
+        return str(self.id)
+
+    
+
+
+
+#####################################################################################     
 
 class Submission (SubmittedThing):
     """

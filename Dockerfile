@@ -22,9 +22,9 @@ RUN apt-get install -y python-dev python-distribute python-pip
 RUN apt-get install -y python-psycopg2 postgresql libpq-dev postgresql-9.6-postgis-2.3 postgis postgresql-9.6
 
 # If you want to deploy from an online host git repository, you can use the following command to clone:
-RUN git clone https://github.com/mapseed/api.git && cd api && git checkout 1.7.0 && cd -
+# RUN git clone https://github.com/mapseed/api.git && cd api && git checkout 1.7.0 && cd -
 # # for local testing, cd into project root and uncomment this line:
-# ADD . api
+ADD . api
 
 # Get pip to download and install requirements:
 RUN pip install -r /api/requirements.txt
@@ -44,4 +44,4 @@ VOLUME /api/static
 # CMD python server.py
 # or:
 # CMD sh -c "python src/manage.py collectstatic --noinput && gunicorn wsgi:application -w 3 -b 0.0.0.0:8010"
-CMD /api/start.sh
+CMD ["bash", "/api/start.sh"]
