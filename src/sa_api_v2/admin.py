@@ -371,6 +371,24 @@ class MasterAdmin(admin.ModelAdmin):
     search_fields = ('subbasin_name_nombre', 'private_address', 'agua_calidad', 'biodiversidad_especies', 'cuerpo_agua', 'estado_agua_clara', 'estado_agua_registro', 'estado_color_agua', 'estado_materiales_cuales', 'estado_materiales_flotantes', 'estado_olores_agua', 'entorno_cuerpo_agua', 'fuente_contaminacion_cercana', 'fuentes_opcion', 'lluvias_observacion', 'lluvias_observacion_opcion', 'location_type', 'nivel_agua_cuerpo', 'referencia_cercana', 'reportes_estado_area', 'subbasin_name', 'vegetacion_cuerpo_agua', 'vegetacion_cuerpo_agua_option', 'vegetacion_margenes_cuerpo', 'vegetacion_opcion', 'vientos_fuertes', 'visitas')
     list_editable = ('visible', 'agua_calidad', 'biodiversidad_especies', 'cuerpo_agua', 'estado_agua_clara', 'estado_agua_registro', 'estado_color_agua', 'estado_materiales_cuales', 'estado_materiales_flotantes', 'estado_olores_agua', 'entorno_cuerpo_agua', 'fuente_contaminacion_cercana', 'fuentes_opcion', 'lluvias_observacion', 'lluvias_observacion_opcion', 'location_type', 'nivel_agua_cuerpo', 'private_address', 'referencia_cercana', 'reportes_estado_area', 'subbasin_name', 'subbasin_name_nombre', 'vegetacion_cuerpo_agua', 'vegetacion_cuerpo_agua_option', 'vegetacion_margenes_cuerpo', 'vegetacion_opcion', 'vientos_fuertes', 'visitas')    
     list_per_page = 30
+    
+    def make_visible(modeladmin, request, queryset):
+        queryset.update(visible=True)
+    make_visible.short_description = "Habilita el contenido de la linea"
+
+    def make_invisible(modeladmin, request, queryset):
+        queryset.update(visible=False)
+    make_invisible.short_description = "Deshabilita el contenido de la linea"
+
+    def make_true(modeladmin, request, queryset):
+        queryset.update(visible=True)
+    make_true.short_description = "Habilita el contenido de la linea"
+
+    def make_false(modeladmin, request, queryset):
+        queryset.update(visible=False)
+    make_false.short_description = "Deshabilita el contenido de la linea"
+
+    actions = [make_visible, make_invisible, make_true, make_false]
 
     def get_queryset(self, request):
         qs = super(MasterAdmin, self).get_queryset(request)
